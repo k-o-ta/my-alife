@@ -1,9 +1,10 @@
-#version 120
-#
+#version 140
+
 uniform sampler2D u_texture;
-varying vec2 v_texcoord;
+in vec2 v_texcoord;
+out vec4 flagColor;
 void main()
 {
-    float r = texture2D(u_texture, v_texcoord).r;
-    gl_FragColor = vec4(r,r,r,1);
+    float r = texture(u_texture, v_texcoord).r;
+    flagColor = vec4(r,r,r,1);
 }
