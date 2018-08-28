@@ -40,7 +40,7 @@ fn draw_triangle(u: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[us
     use glium::{glutin, Surface};
     let mut events_loop = glutin::EventsLoop::new();
     let window = glutin::WindowBuilder::new()
-        .with_dimensions(600, 600)
+        .with_dimensions((600, 600).into())
         .with_title("Hello world");
     let context = glutin::ContextBuilder::new();
     let display = glium::Display::new(window, context, &events_loop).unwrap();
@@ -57,7 +57,6 @@ fn draw_triangle(u: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[us
     //     v_texcoord: [f32; 2],
     // }
     // implement_vertex!(VTexcoord, v_texcoord);
-
     let vertex1 = Vertex {
         a_position: [-1.0, -1.0],
         a_texcoord: [0.0, 0.0],
@@ -82,7 +81,34 @@ fn draw_triangle(u: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[us
         a_position: [-1.0, 1.0],
         a_texcoord: [0.0, 1.0],
     };
-    let shape = vec![vertex1, vertex2, vertex3, vertex4, vertex5, vertex6];
+    let vertex11 = Vertex {
+        a_position: [-1.0, -1.0],
+        a_texcoord: [0.0, 1.0],
+    };
+    let vertex12 = Vertex {
+        a_position: [1.0, -1.0],
+        a_texcoord: [1.0, 1.0],
+    };
+    let vertex13 = Vertex {
+        a_position: [1.0, 1.0],
+        a_texcoord: [1.0, 0.0],
+    };
+    let vertex14 = Vertex {
+        a_position: [-1.0, -1.0],
+        a_texcoord: [0.0, 1.0],
+    };
+    let vertex15 = Vertex {
+        a_position: [-1.0, 1.0],
+        a_texcoord: [0.0, 0.0],
+    };
+    let vertex16 = Vertex {
+        a_position: [1.0, 1.0],
+        a_texcoord: [1.0, 0.0],
+    };
+    let shape = vec![vertex11, vertex12, vertex13, vertex14, vertex15, vertex16];
+    // let shape = vec![vertex1, vertex2, vertex3, vertex4, vertex5, vertex6];
+    // let shape = vec![vertex1, vertex2, vertex3];
+    // let shape = vec![vertex4, vertex5, vertex6];
 
     let vertex_buffer = glium::VertexBuffer::new(&display, &shape).unwrap();
 
@@ -131,7 +157,7 @@ fn draw_triangle(u: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[us
             } else {
             }
             v = v * 255.0;
-            let uv = v as u32;
+            let uv = v as u8;
 
             // inner_vec.push(vector[i + j].clone())
             // inner_vec.push(vec![v, v, v, v]);
@@ -139,11 +165,15 @@ fn draw_triangle(u: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[us
             // inner_vec.push((0, 255, 255 as u32));
             // inner_vec.push((255, 255, 255 as u32));
             // inner_vec.push(255 as u32);
-            texture_data.push(0 as u8);
-            texture_data.push(255 as u8);
-            texture_data.push(255 as u8);
-            texture_data.push(255 as u8);
+            // texture_data.push(124 as u8);
+            // texture_data.push(125 as u8);
             // texture_data.push(255 as u8);
+            // texture_data.push(255 as u8);
+            // texture_data.push(255 as u8);
+            texture_data.push(uv);
+            texture_data.push(uv);
+            texture_data.push(uv);
+            texture_data.push(uv);
         }
         // texture_data.push(inner_vec);
     }
@@ -162,7 +192,7 @@ fn draw_triangle(u: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[us
         image.height,
         image.format
     );
-    println!("{:?}", image.data);
+    // println!("{:?}", image.data);
     let texture = glium::texture::Texture2d::new(&display, image).unwrap();
     // let texture = glium::texture::CompressedTexture2d::new(&display, texture_data).unwrap();
     println!("{:?}", texture);
@@ -195,8 +225,7 @@ fn draw_triangle(u: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[us
         events_loop.poll_events(|event| match event {
             glutin::Event::WindowEvent { event, .. } => {
                 match event {
-                    // glutin::WindowEvent::CloseRequested => closed = true,
-                    glutin::WindowEvent::Closed => closed = true,
+                    glutin::WindowEvent::CloseRequested => closed = true,
                     _ => (),
                 }
             }
