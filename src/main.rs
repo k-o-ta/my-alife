@@ -16,6 +16,7 @@ use ndarray_rand::F32;
 use ndarray_rand::RandomExt;
 use rand::distributions::Range;
 use std::ops::AddAssign;
+use glium::texture::{Texture2dDataSource, PixelValue};
 
 // simulation parameter
 const SPACE_GRID_SIZE: usize = 256;
@@ -33,63 +34,13 @@ fn main() {
     let (u, v) = make_matrix();
     // println!("{:?}", u);
     draw_triangle(u);
-    // // initialize
-    // let mut u = Array2::<f32>::ones((256, 256));
-    // let mut v = Array2::<f32>::zeros((256, 256));
-    // const SQUARE_SIZE: usize = 20;
-    // u.slice_mut(s![
-    //     SPACE_GRID_SIZE / 2 - SQUARE_SIZE / 2..SPACE_GRID_SIZE / 2 + SQUARE_SIZE / 2,
-    //     SPACE_GRID_SIZE / 2 - SQUARE_SIZE / 2..SPACE_GRID_SIZE / 2 + SQUARE_SIZE / 2
-    // ]).fill(0.5);
-    // v.slice_mut(s![
-    //     SPACE_GRID_SIZE / 2 - SQUARE_SIZE / 2..SPACE_GRID_SIZE / 2 + SQUARE_SIZE / 2,
-    //     SPACE_GRID_SIZE / 2 - SQUARE_SIZE / 2..SPACE_GRID_SIZE / 2 + SQUARE_SIZE / 2
-    // ]).fill(0.25);
-    // let u_rand = Array::random((SPACE_GRID_SIZE, SPACE_GRID_SIZE), F32(Range::new(0., 1.))) * 0.1;
-    // let v_rand = Array::random((SPACE_GRID_SIZE, SPACE_GRID_SIZE), F32(Range::new(0., 1.))) * 0.1;
-    // u.add_assign(&u_rand);
-    // v.add_assign(&v_rand);
-    // println!("{:?}", v);
-    //
-    // let mut events_loop = glutin::EventsLoop::new();
-    // let window = glutin::WindowBuilder::new()
-    //     .with_title("chap2")
-    //     .with_dimensions(LogicalSize::new(600.0, 600.0));
-    // let context = glutin::ContextBuilder::new();
-    // let gl_window = glutin::GlWindow::new(window, context, &events_loop).unwrap();
-    //
-    // unsafe {
-    //     gl_window.make_current().unwrap();
-    // }
-    //
-    // unsafe {
-    //     gl::load_with(|symbol| gl_window.get_proc_address(symbol) as *const _);
-    //     gl::ClearColor(0.0, 1.0, 0.0, 1.0);
-    // }
-    //
-    // // let mut running = true;
-    // let mut running = false;
-    // while running {
-    //     events_loop.poll_events(|event| match event {
-    //         glutin::Event::WindowEvent { event, .. } => match event {
-    //             glutin::WindowEvent::CloseRequested => running = false,
-    //             glutin::WindowEvent::Resized(logical_size) => {}
-    //             _ => {}
-    //         },
-    //         _ => {}
-    //     });
-    //     unsafe {
-    //         gl::Clear(gl::COLOR_BUFFER_BIT);
-    //     }
-    //     gl_window.swap_buffers().unwrap();
-    // }
 }
 
 fn draw_triangle(u: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[usize; 2]>>) {
     use glium::{glutin, Surface};
     let mut events_loop = glutin::EventsLoop::new();
     let window = glutin::WindowBuilder::new()
-     .with_dimensions(600, 600)
+        .with_dimensions(600, 600)
         .with_title("Hello world");
     let context = glutin::ContextBuilder::new();
     let display = glium::Display::new(window, context, &events_loop).unwrap();
@@ -97,60 +48,59 @@ fn draw_triangle(u: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[us
     #[derive(Copy, Clone)]
     struct Vertex {
         a_position: [f32; 2],
-    }
-    implement_vertex!(Vertex, a_position);
-
-    #[derive(Copy, Clone)]
-    struct ATexcoord {
         a_texcoord: [f32; 2],
     }
-    implement_vertex!(ATexcoord, a_texcoord);
+    implement_vertex!(Vertex, a_position, a_texcoord);
 
-    #[derive(Copy, Clone)]
-    struct VTexcoord {
-        v_texcoord: [f32; 2],
-    }
-    implement_vertex!(VTexcoord, v_texcoord);
+    // #[derive(Copy, Clone)]
+    // struct VTexcoord {
+    //     v_texcoord: [f32; 2],
+    // }
+    // implement_vertex!(VTexcoord, v_texcoord);
 
-    let vertex1 = Vertex { a_position: [-1.0, -1.0] };
-    let vertex2 = Vertex { a_position: [-1.0, 1.0] };
-    let vertex3 = Vertex { a_position: [1.0, 1.0] };
-    let vertex4 = Vertex { a_position: [-1.0, -1.0] };
-    let vertex5 = Vertex { a_position: [1.0, -1.0] };
-    let vertex6 = Vertex { a_position: [1.0, 1.0] };
-    let shape = vec![vertex1, vertex2, vertex3, vertex4
-
-        ,vertex5, vertex6
-    ];
+    let vertex1 = Vertex {
+        a_position: [-1.0, -1.0],
+        a_texcoord: [0.0, 0.0],
+    };
+    let vertex2 = Vertex {
+        a_position: [1.0, 1.0],
+        a_texcoord: [1.0, 0.0],
+    };
+    let vertex3 = Vertex {
+        a_position: [1.0, -1.0],
+        a_texcoord: [1.0, 0.0],
+    };
+    let vertex4 = Vertex {
+        a_position: [-1.0, -1.0],
+        a_texcoord: [0.0, 0.0],
+    };
+    let vertex5 = Vertex {
+        a_position: [1.0, 1.0],
+        a_texcoord: [1.0, 0.0],
+    };
+    let vertex6 = Vertex {
+        a_position: [-1.0, 1.0],
+        a_texcoord: [0.0, 1.0],
+    };
+    let shape = vec![vertex1, vertex2, vertex3, vertex4, vertex5, vertex6];
 
     let vertex_buffer = glium::VertexBuffer::new(&display, &shape).unwrap();
 
-    let a_texcoord1 = ATexcoord { a_texcoord: [0.0, 1.0] };
-    let a_texcoord2 = ATexcoord { a_texcoord: [0.0, 0.0] };
-    let a_texcoord3 = ATexcoord { a_texcoord: [1.0, 1.0] };
-    let a_texcoord4 = ATexcoord { a_texcoord: [1.0, 0.0] };
-    let a_texcoord5 = ATexcoord { a_texcoord: [1.0, 1.0] };
-    let a_texcoord6 = ATexcoord { a_texcoord: [0.0, 0.0] };
-    let a_shape = vec![a_texcoord1, a_texcoord2, a_texcoord3, a_texcoord4
-    ,a_texcoord5, a_texcoord6
-
-    ];
-    let a_texcoord_buffer = glium::VertexBuffer::new(&display, &a_shape).unwrap();
-
-    // let v_texcoord1 = VTexcoord {
-    //     v_texcoord: [-0.5, -0.5],
-    // };
-    // let v_texcoord2 = VTexcoord {
-    //     v_texcoord: [0.0, 0.5],
-    // };
-    // let v_texcoord3 = VTexcoord {
-    //     v_texcoord: [0.5, 0.25],
-    // };
-    // let v_texcoord4 = VTexcoord {
-    //     v_texcoord: [1.0, 0.25],
-    // };
-    // let v_shape = vec![v_texcoord1, v_texcoord2, v_texcoord3, v_texcoord4];
-    // let v_texcoord_buffer = glium::VertexBuffer::new(&display, &v_shape).unwrap();
+    // let a_texcoord1 = ATexcoord { a_texcoord: [0.0, 1.0] };
+    // let a_texcoord2 = ATexcoord { a_texcoord: [0.0, 0.0] };
+    // let a_texcoord3 = ATexcoord { a_texcoord: [1.0, 1.0] };
+    // let a_texcoord4 = ATexcoord { a_texcoord: [1.0, 0.0] };
+    // let a_texcoord5 = ATexcoord { a_texcoord: [1.0, 1.0] };
+    // let a_texcoord6 = ATexcoord { a_texcoord: [0.0, 0.0] };
+    // let a_shape = vec![
+    //     a_texcoord1,
+    //     a_texcoord2,
+    //     a_texcoord3,
+    //     a_texcoord4,
+    //     a_texcoord5,
+    //     a_texcoord6,
+    // ];
+    // let a_texcoord_buffer = glium::VertexBuffer::new(&display, &a_shape).unwrap();
 
     let indices = glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList);
 
@@ -165,17 +115,15 @@ fn draw_triangle(u: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[us
     println!("{:?}", program0);
     let program = program0.unwrap();
 
-    // let texture_data = vec![vec![(0u8, 0, 0), (255, 255, 255)]];
-    // let texture_data = vec![vec![0.0]];
-    // let texture_data2: Vec<Vec<f32>> = u.into_iter().map(|d| d.clone().to_vec()).collect();
-    // println!("#{:?}", u.row(1).to_vec());
     let vector = u.iter().map(|d| d).collect::<Vec<&f32>>();
     // println!("{:?}", vector);
-    let mut texture_data: Vec<Vec<f32>> = Vec::new();
+    // let mut texture_data: Vec<Vec<(u32, u32, u32, u32)>> = Vec::new();
+    let mut texture_data = Vec::new();
     for i in 0..256 {
-        let mut inner_vec: Vec<f32> = Vec::new();
+        // let mut inner_vec: Vec<(u32, u32, u32, u32)> = Vec::new();
+        // let mut inner_vec = Vec::new();
         for j in 0..256 {
-            let mut v = vector[i*256 + j].clone();
+            let mut v = vector[i * 256 + j].clone();
             if v < 0.0 {
                 v = 0.0;
             } else if v > 1.0 {
@@ -183,18 +131,46 @@ fn draw_triangle(u: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[us
             } else {
             }
             v = v * 255.0;
+            let uv = v as u32;
 
             // inner_vec.push(vector[i + j].clone())
-            inner_vec.push(v);
+            // inner_vec.push(vec![v, v, v, v]);
+            // inner_vec.push((uv, uv, uv, 1));
+            // inner_vec.push((0, 255, 255 as u32));
+            // inner_vec.push((255, 255, 255 as u32));
+            // inner_vec.push(255 as u32);
+            texture_data.push(0 as u8);
+            texture_data.push(255 as u8);
+            texture_data.push(255 as u8);
+            texture_data.push(255 as u8);
+            // texture_data.push(255 as u8);
         }
-        texture_data.push(inner_vec);
+        // texture_data.push(inner_vec);
     }
     // let texture_data = vec![vec![0.0]];
 
     // let texture_data = [[1.0; 256]; 256];
     // let texture_data = u;
     // println!("{:?}", texture_data);
-    let texture = glium::texture::Texture2d::new(&display, texture_data).unwrap();
+    // let texture = glium::texture::Texture2d::new(&display, texture_data).unwrap();
+    println!("raw: {}", texture_data.len());
+    let image = glium::texture::RawImage2d::from_raw_rgba(texture_data, (256, 256));
+    // let image = glium::texture::RawImage2d::from_raw_rgba(texture_data, (256, 256));
+    println!(
+        "widhth{:?}, height: {:?}, format: {:?}",
+        image.width,
+        image.height,
+        image.format
+    );
+    println!("{:?}", image.data);
+    let texture = glium::texture::Texture2d::new(&display, image).unwrap();
+    // let texture = glium::texture::CompressedTexture2d::new(&display, texture_data).unwrap();
+    println!("{:?}", texture);
+    println!(
+        "width: {}, height: {:?}",
+        texture.get_width(),
+        texture.get_height()
+    );
 
     let mut closed = false;
     while !closed {
@@ -203,13 +179,12 @@ fn draw_triangle(u: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[us
         target
             .draw(
                 // (&vertex_buffer, &a_texcoord_buffer, &v_texcoord_buffer),
-                (&vertex_buffer, &a_texcoord_buffer),
+                &vertex_buffer,
                 &indices,
                 &program,
                 // &glium::uniforms::EmptyUniforms,
                 // &uniform! {matrix: [0.0, 0.0, 0.0, 0.0]},
                 &uniform! {
-                // u_texture: texture.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest)
                 u_texture: texture.sampled()
                                },
                 &Default::default(),
@@ -221,6 +196,7 @@ fn draw_triangle(u: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[us
             glutin::Event::WindowEvent { event, .. } => {
                 match event {
                     // glutin::WindowEvent::CloseRequested => closed = true,
+                    glutin::WindowEvent::Closed => closed = true,
                     _ => (),
                 }
             }
@@ -246,7 +222,7 @@ fn make_matrix()
         SPACE_GRID_SIZE / 2 - SQUARE_SIZE / 2..
             SPACE_GRID_SIZE / 2 + SQUARE_SIZE / 2,
     ]).fill(0.5);
-    // println!("{:?}", 
+    // println!("{:?}",
     // u.slice(s![
     //     SPACE_GRID_SIZE / 2 - SQUARE_SIZE / 2..
     //         SPACE_GRID_SIZE / 2 + SQUARE_SIZE / 2,
@@ -268,4 +244,18 @@ fn make_matrix()
     (u, v)
 }
 
-// impl glium::texture::Texture2dDataSource<'_>` is not implemented for `ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[usize; 2]>>`
+// impl<'a, P: PixelValue + Clone> Texture2dDataSource<'a> for Vec<Vec<[u32; 4]>> {
+//     type Data = P;
+//
+//     fn into_raw(self) -> RawImage2d<'a, P> {
+//         let width = self.iter().next().map(|e| e.len()).unwrap_or(0) as u32;
+//         let height = self.len() as u32;
+//
+//         RawImage2d {
+//             data: Cow::Owned(self.into_iter().flat_map(|e| e.into_iter()).collect()),
+//             width: width,
+//             height: height,
+//             format: <P as PixelValue>::get_format(),
+//         }
+//     }
+// }
