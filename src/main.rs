@@ -1,3 +1,4 @@
+mod visualizer;
 extern crate gl;
 extern crate glutin;
 #[macro_use]
@@ -34,7 +35,43 @@ type Matrix<T> = ndarray::ArrayBase<ndarray::OwnedRepr<T>, ndarray::Dim<[usize; 
 
 fn main() {
     let (u, v) = make_matrix();
-    draw_triangle(u, v);
+    visualizer::draw((u, v), lap);
+    // draw_triangle(u, v);
+}
+
+// fn make() -> visualizer::Matrix<f32> {
+//     let (u, v) = make_matrix();
+//     lap(u, v)
+// }
+
+// F: FnMut(&T) -> &Matrix<f32>,
+fn lap(uv: &mut (Matrix<f32>, Matrix<f32>)) -> &Matrix<f32> {
+    for _ in 0..VISUALIZATION_STEP {
+        // let mut u = &uv.0;
+        // let ref v = (*uv).1;
+        // ラプラシアンの計算
+        let laplacian_u = (roll(&uv.0, 1, false)
+            + roll(&uv.0, -1, false)
+            + roll(&uv.0, 1, true)
+            + roll(&uv.0, -1, true) - &uv.0 * 4.0) / (DX * DX);
+        let laplacian_v = (roll(&uv.1, 1, false)
+            + roll(&uv.1, -1, false)
+            + roll(&uv.1, 1, true)
+            + roll(&uv.1, -1, true) - &uv.1 * 4.0) / (DX * DX);
+
+        // Gray-Scottモデル方程式
+        let dudt = (laplacian_u * DU) - (&uv.0 * &uv.1 * &uv.1) + F * (1.0 - &uv.0);
+        let dvdt = (laplacian_v * DV) + (&uv.0 * &uv.1 * &uv.1) - (F + K) * &uv.1;
+        uv.0 = ((DT as f32 * dudt) + &uv.0);
+        uv.1 = ((DT as f32 * dvdt) + &uv.1);
+        // uv.0 = (&uv.0 + (DT as f32 * dudt));
+        // uv.0 = (uv.1 + (DT as f32 * dvdt));
+        // u = u + (DT as f32 * dudt);
+        // uv.0 = hoge;
+        // let fuga = *v + (DT as f32 * dvdt);
+        // uv = &(, );
+    }
+    &uv.0
 }
 
 fn make_texture_image<'a>(u: &Matrix<f32>) -> glium::texture::RawImage2d<'a, u8> {
