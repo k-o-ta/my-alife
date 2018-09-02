@@ -9,8 +9,6 @@ extern crate num;
 extern crate num_traits;
 extern crate rand;
 
-// use glutin::dpi::*;
-// use glutin::GlContext;
 use ndarray::prelude::*;
 use ndarray::Array;
 use ndarray::Array2;
@@ -39,21 +37,10 @@ fn main() {
     draw_triangle(u, v);
 }
 
-fn make_texture_image<'a>(
-    u: &ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[usize; 2]>>,
-) -> glium::texture::RawImage2d<'a, u8> {
+fn make_texture_image<'a>(u: &Matrix<f32>) -> glium::texture::RawImage2d<'a, u8> {
     let mut texture_data = Vec::new();
     for row in u.outer_iter() {
         for e in row.iter() {
-            // let mut v = *e;
-            // if v < 0.0 {
-            //     v = 0.0;
-            // } else if v > 1.0 {
-            //     v = 1.0;
-            // } else {
-            // }
-            // v *= 255.0;
-            // let uv = v as u8;
             let v = (if *e < 0.0 {
                 0.0
             } else if *e > 1.0 {
@@ -71,15 +58,12 @@ fn make_texture_image<'a>(
     glium::texture::RawImage2d::from_raw_rgba(texture_data, (256, 256))
 }
 
-fn draw_triangle(
-    mut u: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[usize; 2]>>,
-    mut v: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[usize; 2]>>,
-) {
+fn draw_triangle(mut u: Matrix<f32>, mut v: Matrix<f32>) {
     use glium::{glutin, Surface};
     let mut events_loop = glutin::EventsLoop::new();
     let window = glutin::WindowBuilder::new()
         .with_dimensions((600, 600).into())
-        .with_title("Hello world");
+        .with_title("Gray Scott");
     let context = glutin::ContextBuilder::new();
     let display = glium::Display::new(window, context, &events_loop).unwrap();
 
@@ -197,11 +181,7 @@ fn make_matrix() -> (Matrix<f32>, Matrix<f32>) {
 }
 
 // #[allow(clippy)]
-fn roll<A, T>(
-    a: &ndarray::ArrayBase<ndarray::OwnedRepr<A>, ndarray::Dim<[usize; 2]>>,
-    shift: T,
-    axis: bool,
-) -> ndarray::ArrayBase<ndarray::OwnedRepr<A>, ndarray::Dim<[usize; 2]>>
+fn roll<A, T>(a: &Matrix<A>, shift: T, axis: bool) -> Matrix<A>
 where
     A: Copy,
     T: Integer + num_traits::cast::NumCast,
