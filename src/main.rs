@@ -5,18 +5,22 @@ extern crate glium;
 #[macro_use(s)]
 extern crate ndarray;
 extern crate ndarray_rand;
+extern crate num;
+extern crate num_traits;
 extern crate rand;
 
 // use glutin::dpi::*;
 // use glutin::GlContext;
+use glium::texture::{PixelValue, Texture2dDataSource};
 use ndarray::prelude::*;
 use ndarray::Array;
 use ndarray::Array2;
 use ndarray_rand::F32;
 use ndarray_rand::RandomExt;
+use num::Integer;
+use num_traits::CheckedNeg;
 use rand::distributions::Range;
 use std::ops::AddAssign;
-use glium::texture::{Texture2dDataSource, PixelValue};
 
 // simulation parameter
 const SPACE_GRID_SIZE: usize = 256;
@@ -31,12 +35,46 @@ const F: f32 = 0.04;
 const K: f32 = 0.06;
 
 fn main() {
+    roll2();
     let (u, v) = make_matrix();
     // println!("{:?}", u);
-    draw_triangle(u);
+    draw_triangle(u, v);
 }
 
-fn draw_triangle(u: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[usize; 2]>>) {
+fn make_texture_image<'a>(
+    u: &ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[usize; 2]>>,
+) -> glium::texture::RawImage2d<'a, u8> {
+    let vector = u.iter().map(|d| d).collect::<Vec<&f32>>();
+    let mut texture_data = Vec::new();
+    for i in 0..256 {
+        // let mut inner_vec: Vec<(u32, u32, u32, u32)> = Vec::new();
+        // let mut inner_vec = Vec::new();
+        for j in 0..256 {
+            let mut v = vector[i * 256 + j].clone();
+            if v < 0.0 {
+                v = 0.0;
+            } else if v > 1.0 {
+                v = 1.0;
+            } else {
+            }
+            v = v * 255.0;
+            let uv = v as u8;
+
+            texture_data.push(uv);
+            texture_data.push(uv);
+            texture_data.push(uv);
+            texture_data.push(uv);
+        }
+        // texture_data.push(inner_vec);
+    }
+    let image = glium::texture::RawImage2d::from_raw_rgba(texture_data, (256, 256));
+    image
+}
+
+fn draw_triangle(
+    mut u: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[usize; 2]>>,
+    mut v: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[usize; 2]>>,
+) {
     use glium::{glutin, Surface};
     let mut events_loop = glutin::EventsLoop::new();
     let window = glutin::WindowBuilder::new()
@@ -130,8 +168,8 @@ fn draw_triangle(u: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[us
 
     let indices = glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList);
 
-    let v = include_str!("../res/shaders/matrix_visualizer_vertex.glsl");
-    let f = include_str!("../res/shaders/matrix_visualizer_fragment.glsl");
+    // let v = include_str!("../res/shaders/matrix_visualizer_vertex.glsl");
+    // let f = include_str!("../res/shaders/matrix_visualizer_fragment.glsl");
     let program0 = glium::Program::from_source(
         &display,
         include_str!("../res/shaders/matrix_visualizer_vertex.glsl"),
@@ -141,69 +179,71 @@ fn draw_triangle(u: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[us
     println!("{:?}", program0);
     let program = program0.unwrap();
 
-    let vector = u.iter().map(|d| d).collect::<Vec<&f32>>();
-    // println!("{:?}", vector);
-    // let mut texture_data: Vec<Vec<(u32, u32, u32, u32)>> = Vec::new();
-    let mut texture_data = Vec::new();
-    for i in 0..256 {
-        // let mut inner_vec: Vec<(u32, u32, u32, u32)> = Vec::new();
-        // let mut inner_vec = Vec::new();
-        for j in 0..256 {
-            let mut v = vector[i * 256 + j].clone();
-            if v < 0.0 {
-                v = 0.0;
-            } else if v > 1.0 {
-                v = 1.0;
-            } else {
-            }
-            v = v * 255.0;
-            let uv = v as u8;
-
-            // inner_vec.push(vector[i + j].clone())
-            // inner_vec.push(vec![v, v, v, v]);
-            // inner_vec.push((uv, uv, uv, 1));
-            // inner_vec.push((0, 255, 255 as u32));
-            // inner_vec.push((255, 255, 255 as u32));
-            // inner_vec.push(255 as u32);
-            // texture_data.push(124 as u8);
-            // texture_data.push(125 as u8);
-            // texture_data.push(255 as u8);
-            // texture_data.push(255 as u8);
-            // texture_data.push(255 as u8);
-            texture_data.push(uv);
-            texture_data.push(uv);
-            texture_data.push(uv);
-            texture_data.push(uv);
-        }
-        // texture_data.push(inner_vec);
-    }
-    // let texture_data = vec![vec![0.0]];
-
-    // let texture_data = [[1.0; 256]; 256];
-    // let texture_data = u;
-    // println!("{:?}", texture_data);
-    // let texture = glium::texture::Texture2d::new(&display, texture_data).unwrap();
-    println!("raw: {}", texture_data.len());
-    let image = glium::texture::RawImage2d::from_raw_rgba(texture_data, (256, 256));
+    // let vector = u.iter().map(|d| d).collect::<Vec<&f32>>();
+    // // println!("{:?}", vector);
+    // // let mut texture_data: Vec<Vec<(u32, u32, u32, u32)>> = Vec::new();
+    // let mut texture_data = Vec::new();
+    // for i in 0..256 {
+    //     // let mut inner_vec: Vec<(u32, u32, u32, u32)> = Vec::new();
+    //     // let mut inner_vec = Vec::new();
+    //     for j in 0..256 {
+    //         let mut v = vector[i * 256 + j].clone();
+    //         if v < 0.0 {
+    //             v = 0.0;
+    //         } else if v > 1.0 {
+    //             v = 1.0;
+    //         } else {
+    //         }
+    //         v = v * 255.0;
+    //         let uv = v as u8;
+    //
+    //         // inner_vec.push(vector[i + j].clone())
+    //         // inner_vec.push(vec![v, v, v, v]);
+    //         // inner_vec.push((uv, uv, uv, 1));
+    //         // inner_vec.push((0, 255, 255 as u32));
+    //         // inner_vec.push((255, 255, 255 as u32));
+    //         // inner_vec.push(255 as u32);
+    //         // texture_data.push(124 as u8);
+    //         // texture_data.push(125 as u8);
+    //         // texture_data.push(255 as u8);
+    //         // texture_data.push(255 as u8);
+    //         // texture_data.push(255 as u8);
+    //         texture_data.push(uv);
+    //         texture_data.push(uv);
+    //         texture_data.push(uv);
+    //         texture_data.push(uv);
+    //     }
+    //     // texture_data.push(inner_vec);
+    // }
+    // // let texture_data = vec![vec![0.0]];
+    //
+    // // let texture_data = [[1.0; 256]; 256];
+    // // let texture_data = u;
+    // // println!("{:?}", texture_data);
+    // // let texture = glium::texture::Texture2d::new(&display, texture_data).unwrap();
+    // println!("raw: {}", texture_data.len());
     // let image = glium::texture::RawImage2d::from_raw_rgba(texture_data, (256, 256));
-    println!(
-        "widhth{:?}, height: {:?}, format: {:?}",
-        image.width,
-        image.height,
-        image.format
-    );
-    // println!("{:?}", image.data);
-    let texture = glium::texture::Texture2d::new(&display, image).unwrap();
-    // let texture = glium::texture::CompressedTexture2d::new(&display, texture_data).unwrap();
-    println!("{:?}", texture);
-    println!(
-        "width: {}, height: {:?}",
-        texture.get_width(),
-        texture.get_height()
-    );
 
     let mut closed = false;
     while !closed {
+        // ラプラシアンの計算
+        let laplacian_u =
+            (roll(&u, 1, false) + roll(&u, -1, false) + roll(&u, 1, true) + roll(&u, -1, true)
+                - &u * 4.0) / (DX * DX);
+        let laplacian_v =
+            (roll(&v, 1, false) + roll(&v, -1, false) + roll(&v, 1, true) + roll(&v, -1, true)
+                - &v * 4.0) / (DX * DX);
+
+        // Gray-Scottモデル方程式
+        let dudt = (laplacian_u * DU) - (&u * &v * &v) + F * (1.0 - &u);
+        let dvdt = (laplacian_v * DV) + (&u * &v * &v) - (F + K) * &v;
+        u = u + (DT as f32 * dudt);
+        v = v + (DT as f32 * dvdt);
+
+        // u = &u +         // u += DT * dudt;
+
+        let image = make_texture_image(&u);
+        let texture = glium::texture::Texture2d::new(&display, image).unwrap();
         let mut target = display.draw();
         target.clear_color(1.0, 0.0, 0.0, 1.0);
         target
@@ -223,47 +263,38 @@ fn draw_triangle(u: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[us
         target.finish().unwrap();
 
         events_loop.poll_events(|event| match event {
-            glutin::Event::WindowEvent { event, .. } => {
-                match event {
-                    glutin::WindowEvent::CloseRequested => closed = true,
-                    _ => (),
-                }
-            }
+            glutin::Event::WindowEvent { event, .. } => match event {
+                glutin::WindowEvent::CloseRequested => closed = true,
+                _ => (),
+            },
             _ => (),
         });
     }
 }
 
-fn make_matrix()
-    -> (ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[usize; 2]>>,
-        ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[usize; 2]>>)
-{
+fn make_matrix() -> (
+    ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[usize; 2]>>,
+    ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[usize; 2]>>,
+) {
     // initialize
     let mut u = Array2::<f32>::ones((256, 256));
     let mut v = Array2::<f32>::zeros((256, 256));
+
+    // 中央にSQUARE_SIZE四方の正方形を置く
     const SQUARE_SIZE: usize = 20;
     u.slice_mut(s![
         // 0..256,
         // 0..256,
-        SPACE_GRID_SIZE / 2 - SQUARE_SIZE / 2..
-            SPACE_GRID_SIZE / 2 + SQUARE_SIZE / 2,
+        SPACE_GRID_SIZE / 2 - SQUARE_SIZE / 2..SPACE_GRID_SIZE / 2 + SQUARE_SIZE / 2,
         // 0..256,
-        SPACE_GRID_SIZE / 2 - SQUARE_SIZE / 2..
-            SPACE_GRID_SIZE / 2 + SQUARE_SIZE / 2,
+        SPACE_GRID_SIZE / 2 - SQUARE_SIZE / 2..SPACE_GRID_SIZE / 2 + SQUARE_SIZE / 2,
     ]).fill(0.5);
-    // println!("{:?}",
-    // u.slice(s![
-    //     SPACE_GRID_SIZE / 2 - SQUARE_SIZE / 2..
-    //         SPACE_GRID_SIZE / 2 + SQUARE_SIZE / 2,
-    //     SPACE_GRID_SIZE / 2 - SQUARE_SIZE / 2..
-    //         SPACE_GRID_SIZE / 2 + SQUARE_SIZE / 2,
-    // ]));
     v.slice_mut(s![
-        SPACE_GRID_SIZE / 2 - SQUARE_SIZE / 2..
-            SPACE_GRID_SIZE / 2 + SQUARE_SIZE / 2,
-        SPACE_GRID_SIZE / 2 - SQUARE_SIZE / 2..
-            SPACE_GRID_SIZE / 2 + SQUARE_SIZE / 2,
+        SPACE_GRID_SIZE / 2 - SQUARE_SIZE / 2..SPACE_GRID_SIZE / 2 + SQUARE_SIZE / 2,
+        SPACE_GRID_SIZE / 2 - SQUARE_SIZE / 2..SPACE_GRID_SIZE / 2 + SQUARE_SIZE / 2,
     ]).fill(0.25);
+
+    // 対称性を崩すため少しノイズを入れる
     let u_rand = Array::random((SPACE_GRID_SIZE, SPACE_GRID_SIZE), F32(Range::new(0., 1.))) * 0.1;
     let v_rand = Array::random((SPACE_GRID_SIZE, SPACE_GRID_SIZE), F32(Range::new(0., 1.))) * 0.1;
     u.add_assign(&u_rand);
@@ -271,6 +302,62 @@ fn make_matrix()
 
     // println!("{:?}", u);
     (u, v)
+}
+
+fn roll<A, T>(
+    a: &ndarray::ArrayBase<ndarray::OwnedRepr<A>, ndarray::Dim<[usize; 2]>>,
+    shift: T,
+    axis: bool,
+) -> ndarray::ArrayBase<ndarray::OwnedRepr<A>, ndarray::Dim<[usize; 2]>>
+where
+    A: Copy,
+    T: Integer + num_traits::cast::NumCast, // T: Integer + num_traits::cast::AsPrimitive<i32>, // T: Integer + std::ops::Neg + std::convert::From<std::ops::RangeFrom<T>>,
+                                            // ndarray::SliceOrIndex: std::convert::From<std::ops::RangeFrom<T>>
+{
+    let shift: i32 = num::cast(shift).unwrap();
+    let mut rotated = unsafe { Array2::uninitialized(a.dim()) };
+    match axis {
+        true => {
+            rotated
+                .slice_mut(s![.., ..shift])
+                .assign(&a.slice(s![.., -shift..]));
+            rotated
+                .slice_mut(s![.., shift..])
+                .assign(&a.slice(s![.., ..-shift]));
+        }
+        false => {
+            rotated
+                .slice_mut(s![..shift, ..])
+                .assign(&a.slice(s![-shift.., ..]));
+            rotated
+                .slice_mut(s![shift.., ..])
+                .assign(&a.slice(s![..-shift, ..]));
+        }
+    }
+    rotated
+}
+// fn roll2(a: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[usize; 2]>>) {
+fn roll2() {
+    let a = arr2(&[[1, 2, 3], [4, 5, 6], [7, 8, 9]]);
+    // let mut a = Array2::<f32>::ones((256, 256));
+    println!("{:?}", a);
+    println!("{:?}", 1 - &a);
+
+    let b = arr2(&[[2, 2, 2], [3, 3, 3], [4, 4, 4]]);
+    println!("{:?}", &a * &b);
+    // println!("{:?}", a.slice(s![.., -2..]));
+    // println!("{:?}", a.slice(s![.., ..2]));
+    // println!("{:?}", a.slice(s![.., ..-2]));
+    // println!("{:?}", a.slice(s![.., 2..]));
+    // let mut b = unsafe { Array2::uninitialized(a.dim()) };
+    // b.slice_mut(s![.., ..2]).assign(&a.slice(s![.., -2..]));
+    // b.slice_mut(s![.., 2..]).assign(&a.slice(s![.., ..-2]));
+    // println!("{:?}", b);
+    //
+    // let mut c = unsafe { Array2::uninitialized(a.dim()) };
+    // c.slice_mut(s![..2, ..]).assign(&a.slice(s![-2.., ..]));
+    // c.slice_mut(s![2.., ..]).assign(&a.slice(s![..-2, ..]));
+    // println!("{:?}", c);
 }
 
 // impl<'a, P: PixelValue + Clone> Texture2dDataSource<'a> for Vec<Vec<[u32; 4]>> {
