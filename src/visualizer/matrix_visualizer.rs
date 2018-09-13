@@ -6,7 +6,9 @@ use std::io;
 use std::io::prelude::*;
 use std::path::Path;
 
-struct MatrixVisualizer {
+use ndarray::prelude::*;
+
+pub struct MatrixVisualizer {
     program: Program,
     events_loop: glutin::EventsLoop,
     vertex_buffer: VertexBuffer<Vertex>,

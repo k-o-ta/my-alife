@@ -1,8 +1,7 @@
 // mod visualizer;
 extern crate gl;
-extern crate glutin;
-#[macro_use]
 extern crate glium;
+extern crate glutin;
 #[macro_use(s)]
 extern crate ndarray;
 extern crate my_alife;
@@ -11,8 +10,7 @@ extern crate num;
 extern crate num_traits;
 extern crate rand;
 
-use my_alife::visualizer;
-use ndarray::prelude::*;
+use my_alife::visualizer::matrix_visualizer::{Matrix, MatrixVisualizer};
 use ndarray::Array;
 use ndarray::Array2;
 use ndarray_rand::F32;
@@ -33,11 +31,13 @@ const DV: f32 = 1e-5;
 const F: f32 = 0.04;
 const K: f32 = 0.06;
 
-type Matrix<T> = ndarray::ArrayBase<ndarray::OwnedRepr<T>, ndarray::Dim<[usize; 2]>>;
-
 fn main() {
     let (u, v) = make_matrix();
-    visualizer::matrix_visualizer::draw((u, v), lap);
+    let matrix = MatrixVisualizer::new(
+        "res/shaders/matrix_visualizer_vertex.glsl".to_string(),
+        "res/shaders/matrix_visualizer_fragment.glsl".to_string(),
+    );
+    matrix.unwrap().draw((u, v), lap);
 }
 
 fn make_matrix() -> (Matrix<f32>, Matrix<f32>) {
@@ -64,6 +64,7 @@ fn make_matrix() -> (Matrix<f32>, Matrix<f32>) {
 
     (u, v)
 }
+
 fn lap(uv: &mut (Matrix<f32>, Matrix<f32>)) -> &Matrix<f32> {
     for _ in 0..VISUALIZATION_STEP {
         // let mut u = &uv.0;
@@ -81,8 +82,8 @@ fn lap(uv: &mut (Matrix<f32>, Matrix<f32>)) -> &Matrix<f32> {
         // Gray-Scottモデル方程式
         let dudt = (laplacian_u * DU) - (&uv.0 * &uv.1 * &uv.1) + F * (1.0 - &uv.0);
         let dvdt = (laplacian_v * DV) + (&uv.0 * &uv.1 * &uv.1) - (F + K) * &uv.1;
-        uv.0 = ((DT as f32 * dudt) + &uv.0);
-        uv.1 = ((DT as f32 * dvdt) + &uv.1);
+        uv.0 = (DT as f32 * dudt) + &uv.0;
+        uv.1 = (DT as f32 * dvdt) + &uv.1;
         // uv.0 = (&uv.0 + (DT as f32 * dudt));
         // uv.0 = (uv.1 + (DT as f32 * dvdt));
         // u = u + (DT as f32 * dudt);
