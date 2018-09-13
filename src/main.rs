@@ -1,15 +1,17 @@
-mod visualizer;
+// mod visualizer;
 extern crate gl;
 extern crate glutin;
 #[macro_use]
 extern crate glium;
 #[macro_use(s)]
 extern crate ndarray;
+extern crate my_alife;
 extern crate ndarray_rand;
 extern crate num;
 extern crate num_traits;
 extern crate rand;
 
+use my_alife::visualizer;
 use ndarray::prelude::*;
 use ndarray::Array;
 use ndarray::Array2;
@@ -35,7 +37,7 @@ type Matrix<T> = ndarray::ArrayBase<ndarray::OwnedRepr<T>, ndarray::Dim<[usize; 
 
 fn main() {
     let (u, v) = make_matrix();
-    visualizer::draw((u, v), lap);
+    visualizer::matrix_visualizer::draw((u, v), lap);
     // draw_triangle(u, v);
 }
 
