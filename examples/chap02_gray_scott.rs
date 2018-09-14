@@ -16,6 +16,7 @@ use ndarray_rand::F32;
 use ndarray_rand::RandomExt;
 use num::Integer;
 use rand::distributions::Range;
+use std::fmt::Debug;
 use std::ops::AddAssign;
 
 // simulation parameter
@@ -30,17 +31,17 @@ const DV: f32 = 1e-5;
 const F: f32 = 0.04;
 const K: f32 = 0.06;
 
-fn main() {
-    let (u, v) = make_matrix();
+fn main() -> Result<(), impl Debug> {
+    let (u, v) = initial_matrix();
     let matrix = MatrixVisualizer::new(
         "Gray Scott",
         "res/shaders/matrix_visualizer_vertex.glsl".to_string(),
         "res/shaders/matrix_visualizer_fragment.glsl".to_string(),
     );
-    matrix.unwrap().draw((u, v), lap);
+    matrix?.draw((u, v), laplacian)
 }
 
-fn make_matrix() -> (Matrix<f32>, Matrix<f32>) {
+fn initial_matrix() -> (Matrix<f32>, Matrix<f32>) {
     // initialize
     let mut u = Array2::<f32>::ones((256, 256));
     let mut v = Array2::<f32>::zeros((256, 256));
@@ -65,7 +66,7 @@ fn make_matrix() -> (Matrix<f32>, Matrix<f32>) {
     (u, v)
 }
 
-fn lap(uv: &mut (Matrix<f32>, Matrix<f32>)) -> &Matrix<f32> {
+fn laplacian(uv: &mut (Matrix<f32>, Matrix<f32>)) -> &Matrix<f32> {
     let u: &mut Matrix<f32> = &mut uv.0;
     let v: &mut Matrix<f32> = &mut uv.1;
     for _ in 0..VISUALIZATION_STEP {

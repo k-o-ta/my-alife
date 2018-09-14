@@ -75,8 +75,11 @@ impl MatrixVisualizer {
         };
         vec![vertex1, vertex2, vertex3, vertex4, vertex5, vertex6]
     }
-
-    pub fn draw<T, F>(mut self, mut initial_state: T, mut closure: F)
+    pub fn draw<T, F>(
+        mut self,
+        mut initial_state: T,
+        mut update_fn: F,
+    ) -> Result<(), failure::Error>
     where
         F: FnMut(&mut T) -> &Matrix<f32>,
     {
@@ -85,7 +88,7 @@ impl MatrixVisualizer {
             if closed {
                 break;
             }
-            let u = closure(&mut initial_state);
+            let u = update_fn(&mut initial_state);
             let image = make_texture_image(u);
             let texture = texture::Texture2d::new(&self.display, image).unwrap();
             let mut target = self.display.draw();
@@ -96,8 +99,8 @@ impl MatrixVisualizer {
                 &self.program,
                 &uniform! {u_texture: texture.sampled()},
                 &Default::default(),
-            );
-            target.finish();
+            )?;
+            target.finish()?;
 
             self.events_loop.poll_events(|event| {
                 if let glutin::Event::WindowEvent { event, .. } = event {
@@ -107,6 +110,7 @@ impl MatrixVisualizer {
                 }
             });
         }
+        Ok(())
     }
 }
 
