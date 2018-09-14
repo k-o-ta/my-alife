@@ -66,32 +66,25 @@ fn make_matrix() -> (Matrix<f32>, Matrix<f32>) {
 }
 
 fn lap(uv: &mut (Matrix<f32>, Matrix<f32>)) -> &Matrix<f32> {
+    let u: &mut Matrix<f32> = &mut uv.0;
+    let v: &mut Matrix<f32> = &mut uv.1;
     for _ in 0..VISUALIZATION_STEP {
-        // let mut u = &uv.0;
-        // let ref v = (*uv).1;
         // ラプラシアンの計算
-        let laplacian_u = (roll(&uv.0, 1, false)
-            + roll(&uv.0, -1, false)
-            + roll(&uv.0, 1, true)
-            + roll(&uv.0, -1, true) - &uv.0 * 4.0) / (DX * DX);
-        let laplacian_v = (roll(&uv.1, 1, false)
-            + roll(&uv.1, -1, false)
-            + roll(&uv.1, 1, true)
-            + roll(&uv.1, -1, true) - &uv.1 * 4.0) / (DX * DX);
+        let laplacian_u =
+            (roll(&u, 1, false) + roll(&u, -1, false) + roll(&u, 1, true) + roll(&u, -1, true)
+                - &*u * 4.0) / (DX * DX);
+        let laplacian_v =
+            (roll(&v, 1, false) + roll(&v, -1, false) + roll(&v, 1, true) + roll(&v, -1, true)
+                - &*v * 4.0) / (DX * DX);
 
         // Gray-Scottモデル方程式
-        let dudt = (laplacian_u * DU) - (&uv.0 * &uv.1 * &uv.1) + F * (1.0 - &uv.0);
-        let dvdt = (laplacian_v * DV) + (&uv.0 * &uv.1 * &uv.1) - (F + K) * &uv.1;
-        uv.0 = (DT as f32 * dudt) + &uv.0;
-        uv.1 = (DT as f32 * dvdt) + &uv.1;
-        // uv.0 = (&uv.0 + (DT as f32 * dudt));
-        // uv.0 = (uv.1 + (DT as f32 * dvdt));
-        // u = u + (DT as f32 * dudt);
-        // uv.0 = hoge;
-        // let fuga = *v + (DT as f32 * dvdt);
-        // uv = &(, );
+        let dudt = (laplacian_u * DU) - (&*u * &*v * &*v) + F * (1.0 - &*u);
+        let dvdt = (laplacian_v * DV) + (&*u * &*v * &*v) - (F + K) * &*v;
+
+        *u = (DT as f32 * dudt) + &*u;
+        *v = (DT as f32 * dvdt) + &*v;
     }
-    &uv.0
+    u
 }
 
 // #[allow(clippy)]
