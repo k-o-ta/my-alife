@@ -1,4 +1,3 @@
-// mod visualizer;
 extern crate gl;
 extern crate glium;
 extern crate glutin;
@@ -34,6 +33,7 @@ const K: f32 = 0.06;
 fn main() {
     let (u, v) = make_matrix();
     let matrix = MatrixVisualizer::new(
+        "Gray Scott",
         "res/shaders/matrix_visualizer_vertex.glsl".to_string(),
         "res/shaders/matrix_visualizer_fragment.glsl".to_string(),
     );
