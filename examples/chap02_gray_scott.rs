@@ -72,11 +72,9 @@ fn laplacian(uv: &mut (Matrix<f32>, Matrix<f32>)) -> &Matrix<f32> {
     for _ in 0..VISUALIZATION_STEP {
         // ラプラシアンの計算
         let laplacian_u =
-            (roll(&u, 1, false) + roll(&u, -1, false) + roll(&u, 1, true) + roll(&u, -1, true)
-                - &*u * 4.0) / (DX * DX);
+            (roll(&u, 1, false) + roll(&u, -1, false) + roll(&u, 1, true) + roll(&u, -1, true) - &*u * 4.0) / (DX * DX);
         let laplacian_v =
-            (roll(&v, 1, false) + roll(&v, -1, false) + roll(&v, 1, true) + roll(&v, -1, true)
-                - &*v * 4.0) / (DX * DX);
+            (roll(&v, 1, false) + roll(&v, -1, false) + roll(&v, 1, true) + roll(&v, -1, true) - &*v * 4.0) / (DX * DX);
 
         // Gray-Scottモデル方程式
         let dudt = (laplacian_u * DU) - (&*u * &*v * &*v) + F * (1.0 - &*u);
@@ -97,19 +95,11 @@ where
     let shift: i32 = num::cast(shift).unwrap();
     let mut rotated = unsafe { Array2::uninitialized(a.dim()) };
     if axis {
-        rotated
-            .slice_mut(s![.., ..shift])
-            .assign(&a.slice(s![.., -shift..]));
-        rotated
-            .slice_mut(s![.., shift..])
-            .assign(&a.slice(s![.., ..-shift]));
+        rotated.slice_mut(s![.., ..shift]).assign(&a.slice(s![.., -shift..]));
+        rotated.slice_mut(s![.., shift..]).assign(&a.slice(s![.., ..-shift]));
     } else {
-        rotated
-            .slice_mut(s![..shift, ..])
-            .assign(&a.slice(s![-shift.., ..]));
-        rotated
-            .slice_mut(s![shift.., ..])
-            .assign(&a.slice(s![..-shift, ..]));
+        rotated.slice_mut(s![..shift, ..]).assign(&a.slice(s![-shift.., ..]));
+        rotated.slice_mut(s![shift.., ..]).assign(&a.slice(s![..-shift, ..]));
     }
     rotated
 }

@@ -75,11 +75,7 @@ impl MatrixVisualizer {
         };
         vec![vertex1, vertex2, vertex3, vertex4, vertex5, vertex6]
     }
-    pub fn draw<T, F>(
-        mut self,
-        mut initial_state: T,
-        mut update_fn: F,
-    ) -> Result<(), failure::Error>
+    pub fn draw<T, F>(mut self, mut initial_state: T, mut update_fn: F) -> Result<(), failure::Error>
     where
         F: FnMut(&mut T) -> &Matrix<f32>,
     {
