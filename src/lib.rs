@@ -10,4 +10,5 @@ extern crate rand;
 
 extern crate failure;
 
+/// 複数の描画方法をまとめたもの
 pub mod visualizer;

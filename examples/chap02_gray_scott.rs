@@ -35,8 +35,8 @@ fn main() -> Result<(), impl Debug> {
     let (u, v) = initial_matrix();
     let matrix = MatrixVisualizer::new(
         "Gray Scott",
-        "res/shaders/matrix_visualizer_vertex.glsl".to_string(),
-        "res/shaders/matrix_visualizer_fragment.glsl".to_string(),
+        "res/shaders/matrix_visualizer_vertex.glsl",
+        "res/shaders/matrix_visualizer_fragment.glsl",
     );
     matrix?.draw((u, v), laplacian)
 }
