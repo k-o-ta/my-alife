@@ -146,9 +146,32 @@ impl MatrixVisualizer {
             target.finish()?;
 
             self.events_loop.poll_events(|event| {
+                // matchさせたいパターンが1つしかない場合、if let 形式で書ける
+                // matchでやると
+                // match event {
+                //   glutin::Event::WindowEvent { event, .. } => { do_something() },
+                //   _ => { // do nothing }}
+                // }
+                // みたいにcatch節的なものが必要になる(rustのパターンマッチは取り得る全パターンを明示的に書かせるため)
                 if let glutin::Event::WindowEvent { event, .. } = event {
-                    if let glutin::WindowEvent::CloseRequested = event {
-                        closed = true
+                    match event {
+                        glutin::WindowEvent::CloseRequested => closed = true,
+                        glutin::WindowEvent::KeyboardInput {
+                            device_id: _,
+                            input: keyboard_input,
+                        } => match keyboard_input {
+                            glutin::KeyboardInput { // 構造体の各fieldをdestructuringできる
+                                virtual_keycode, // virtual_keycode: virtual_keycode を省略形
+                                modifiers, // modifiers: my_modifiers の様に省略しないで別名をつけても良い
+                                .. // 使わないfieldのscancode: _, state: _, を省略できる
+                            } => match (virtual_keycode, modifiers) { // 複数のパターンマッチにはタプルを使う
+                                (Some(glutin::VirtualKeyCode::W), glutin::ModifiersState { ctrl, .. }) => {
+                                  if ctrl { closed = true }
+                                }
+                                (_, _) => {}
+                            },
+                        },
+                        _ => {}
                     }
                 }
             });
