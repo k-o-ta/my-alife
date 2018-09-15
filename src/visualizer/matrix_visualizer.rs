@@ -114,24 +114,24 @@ impl MatrixVisualizer {
     ///     "res/shaders/matrix_visualizer_fragment.glsl",
     /// );
     /// let initial_state = (Array2::<f32>::ones((256, 256)), Array2::<f32>::ones((256, 256)));
-    /// fn update_nothing(uv: &mut (Matrix<f32>, Matrix<f32>)) -> &Matrix<f32> {
+    /// fn update_nothing(uv: &mut (Matrix<f32>, Matrix<f32>), f: f32, k: f32) -> &Matrix<f32> {
     ///   &uv.0
     /// }
     ///
-    /// matrix.unwrap().draw(initial_state, update_nothing);
+    /// matrix.unwrap().draw(initial_state, 0.04, 0.06, update_nothing);
     ///
     ///
     /// ```
-    pub fn draw<T, F>(mut self, mut initial_state: T, mut update_fn: F) -> Result<(), failure::Error>
+    pub fn draw<T, F>(mut self, mut initial_state: T, f: f32, k: f32, mut update_fn: F) -> Result<(), failure::Error>
     where
-        F: FnMut(&mut T) -> &Matrix<f32>,
+        F: FnMut(&mut T, f32, f32) -> &Matrix<f32>,
     {
         let mut closed = false;
         loop {
             if closed {
                 break;
             }
-            let u = update_fn(&mut initial_state);
+            let u = update_fn(&mut initial_state, f, k);
             let image = make_texture_image(u);
             let texture = texture::Texture2d::new(&self.display, image).unwrap();
             let mut target = self.display.draw();
@@ -167,7 +167,6 @@ struct Vertex {
     a_texcoord: [f32; 2],
 }
 implement_vertex!(Vertex, a_position, a_texcoord);
-
 
 fn make_texture_image<'a>(u: &Matrix<f32>) -> texture::RawImage2d<'a, u8> {
     let mut texture_data = Vec::new();
