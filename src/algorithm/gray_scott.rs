@@ -50,7 +50,7 @@ pub fn initial_matrix() -> (Matrix<f32>, Matrix<f32>) {
 /// # Arguments
 /// * `uv` - 拡散するもとのやつ
 /// * `f` - 拡散するときの変数1
-/// * `k` - 拡散するときの変数1
+/// * `k` - 拡散するときの変数2
 ///
 /// # Example
 /// ```
