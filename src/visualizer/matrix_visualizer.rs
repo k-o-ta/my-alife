@@ -165,9 +165,14 @@ impl MatrixVisualizer {
                                 modifiers, // modifiers: my_modifiers の様に省略しないで別名をつけても良い
                                 .. // 使わないfieldのscancode: _, state: _, を省略できる
                             } => match (virtual_keycode, modifiers) { // 複数のパターンマッチにはタプルを使う
+                                #[cfg(target_os = "linux")] // conditional compile https://doc.rust-lang.org/reference/attributes.html#conditional-compilation
                                 (Some(glutin::VirtualKeyCode::W), glutin::ModifiersState { ctrl, .. }) => {
                                   if ctrl { closed = true }
-                                }
+                                },
+                                #[cfg(target_os = "macos")]
+                                (Some(glutin::VirtualKeyCode::W), glutin::ModifiersState { logo, .. }) => {
+                                  if logo { closed = true }
+                                },
                                 (_, _) => {}
                             },
                         },
