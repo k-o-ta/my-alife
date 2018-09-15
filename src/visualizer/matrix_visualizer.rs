@@ -101,7 +101,7 @@ impl MatrixVisualizer {
     /// * `unpdate_fn` - 初期状態をどのように変更するかの関数
     ///
     /// # Example
-    /// ```
+    /// ```no_run
     /// extern crate ndarray;
     /// extern crate my_alife;
     ///
