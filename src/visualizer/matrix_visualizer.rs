@@ -4,6 +4,7 @@ use ndarray::{ArrayBase, Dim, OwnedRepr};
 use std::fs::File;
 use std::io;
 use std::io::prelude::*;
+use visualizer::WindowStatus;
 
 /// 直交座標系(XY座標系)を用いてvisualizeする構造体
 pub struct MatrixVisualizer {
@@ -94,11 +95,11 @@ impl MatrixVisualizer {
         vec![vertex1, vertex2, vertex3, vertex4, vertex5, vertex6]
     }
 
-    /// 実際に描画を行う
+    /// メインループ
     ///
     /// # Arguments
     /// * `initail_state` - 初期状態
-    /// * `unpdate_fn` - 初期状態をどのように変更するかの関数
+    /// * `unpdate_fn` - 描画する状態をどのように変更するかの関数
     ///
     /// # Example
     /// ```no_run
@@ -118,70 +119,93 @@ impl MatrixVisualizer {
     ///   &uv.0
     /// }
     ///
-    /// matrix.unwrap().draw(initial_state, 0.04, 0.06, update_nothing);
+    /// matrix.unwrap().draw_loop(initial_state, 0.04, 0.06, update_nothing);
     ///
     ///
     /// ```
-    pub fn draw<T, F>(mut self, mut initial_state: T, f: f32, k: f32, mut update_fn: F) -> Result<(), failure::Error>
+    pub fn draw_loop<T, F>(
+        mut self,
+        mut initial_state: T,
+        f: f32,
+        k: f32,
+        mut update_fn: F,
+    ) -> Result<(), failure::Error>
     where
         F: FnMut(&mut T, f32, f32) -> &Matrix<f32>,
     {
-        let mut closed = false;
+        let mut window_status = WindowStatus::Open;
         loop {
-            if closed {
+            if window_status == WindowStatus::Close {
                 break;
             }
             let u = update_fn(&mut initial_state, f, k);
-            let image = make_texture_image(u);
-            let texture = texture::Texture2d::new(&self.display, image).unwrap();
-            let mut target = self.display.draw();
-            target.clear_color(1.0, 0.0, 0.0, 1.0);
-            target.draw(
-                &self.vertex_buffer,
-                &self.indices,
-                &self.program,
-                &uniform! {u_texture: texture.sampled()},
-                &Default::default(),
-            )?;
-            target.finish()?;
+            self.draw(u)?;
 
-            self.events_loop.poll_events(|event| {
-                // matchさせたいパターンが1つしかない場合、if let 形式で書ける
-                // matchでやると
-                // match event {
-                //   glutin::Event::WindowEvent { event, .. } => { do_something() },
-                //   _ => { // do nothing }}
-                // }
-                // みたいにcatch節的なものが必要になる(rustのパターンマッチは取り得る全パターンを明示的に書かせるため)
-                if let glutin::Event::WindowEvent { event, .. } = event {
-                    match event {
-                        glutin::WindowEvent::CloseRequested => closed = true,
-                        glutin::WindowEvent::KeyboardInput {
-                            device_id: _,
-                            input: keyboard_input,
-                        } => match keyboard_input {
-                            glutin::KeyboardInput { // 構造体の各fieldをdestructuringできる
-                                virtual_keycode, // virtual_keycode: virtual_keycode を省略形
-                                modifiers, // modifiers: my_modifiers の様に省略しないで別名をつけても良い
-                                .. // 使わないfieldのscancode: _, state: _, を省略できる
-                            } => match (virtual_keycode, modifiers) { // 複数のパターンマッチにはタプルを使う
-                                #[cfg(target_os = "linux")] // conditional compile https://doc.rust-lang.org/reference/attributes.html#conditional-compilation
-                                (Some(glutin::VirtualKeyCode::W), glutin::ModifiersState { ctrl, .. }) => {
-                                  if ctrl { closed = true }
-                                },
-                                #[cfg(target_os = "macos")]
-                                (Some(glutin::VirtualKeyCode::W), glutin::ModifiersState { logo, .. }) => {
-                                  if logo { closed = true }
-                                },
-                                (_, _) => {}
-                            },
-                        },
-                        _ => {}
-                    }
-                }
-            });
+            window_status = self.hadling_event();
         }
         Ok(())
+    }
+
+    /// 実際に描画を行う
+    ///
+    /// # Arguments
+    /// * `matrix` - 描画される内容
+    ///
+    pub fn draw(&self, matrix: &Matrix<f32>) -> Result<(), failure::Error> {
+        let image = make_texture_image(matrix);
+        let texture = texture::Texture2d::new(&self.display, image);
+        let mut target = self.display.draw();
+        target.clear_color(1.0, 0.0, 0.0, 1.0);
+        target.draw(
+            &self.vertex_buffer,
+            &self.indices,
+            &self.program,
+            &uniform! {u_texture: texture?.sampled()},
+            &Default::default(),
+        )?;
+        target.finish()?;
+        Ok(())
+    }
+
+    /// event handler
+    pub fn hadling_event(&mut self) -> WindowStatus {
+        let mut status = WindowStatus::Open;
+        self.events_loop.poll_events(|event| {
+            // matchさせたいパターンが1つしかない場合、if let 形式で書ける
+            // matchでやると
+            // match event {
+            //   glutin::Event::WindowEvent { event, .. } => { do_something() },
+            //   _ => { // do nothing }}
+            // }
+            // みたいにcatch節的なものが必要になる(rustのパターンマッチは取り得る全パターンを明示的に書かせるため)
+            if let glutin::Event::WindowEvent { event, .. } = event {
+                match event {
+                    glutin::WindowEvent::CloseRequested => status = WindowStatus::Close,
+                    glutin::WindowEvent::KeyboardInput {
+                        device_id: _,
+                        input: keyboard_input,
+                    } => match keyboard_input {
+                        glutin::KeyboardInput { // 構造体の各fieldをdestructuringできる
+                            virtual_keycode, // virtual_keycode: virtual_keycode を省略形
+                            modifiers, // modifiers: my_modifiers の様に省略しないで別名をつけても良い
+                            .. // 使わないfieldのscancode: _, state: _, を省略できる
+                        } => match (virtual_keycode, modifiers) { // 複数のパターンマッチにはタプルを使う
+                            #[cfg(target_os = "linux")] // conditional compile https://doc.rust-lang.org/reference/attributes.html#conditional-compilation
+                            (Some(glutin::VirtualKeyCode::W), glutin::ModifiersState { ctrl, .. }) => {
+                              if ctrl { status = WindowStatus::Close }
+                            },
+                            #[cfg(target_os = "macos")]
+                            (Some(glutin::VirtualKeyCode::W), glutin::ModifiersState { logo, .. }) => {
+                              if logo { status = WindowStatus::Close }
+                            },
+                            (_, _) => {}
+                        },
+                    },
+                    _ => {}
+                }
+            };
+        });
+        return status;
     }
 }
 
@@ -214,5 +238,5 @@ fn make_texture_image<'a>(u: &Matrix<f32>) -> texture::RawImage2d<'a, u8> {
             texture_data.push(v);
         }
     }
-    texture::RawImage2d::from_raw_rgba(texture_data, (256, 256))
+    texture::RawImage2d::from_raw_rgba(texture_data, (u.shape()[0] as u32, u.shape()[1] as u32))
 }

@@ -15,5 +15,5 @@ fn main() -> Result<(), impl Debug> {
         "res/shaders/matrix_visualizer_vertex.glsl",
         "res/shaders/matrix_visualizer_fragment.glsl",
     );
-    matrix?.draw((u, v), F, K, laplacian)
+    matrix?.draw_loop((u, v), F, K, laplacian)
 }
