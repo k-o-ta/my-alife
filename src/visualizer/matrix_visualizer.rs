@@ -123,15 +123,9 @@ impl MatrixVisualizer {
     ///
     ///
     /// ```
-    pub fn draw_loop<T, F>(
-        mut self,
-        mut initial_state: T,
-        f: f32,
-        k: f32,
-        mut update_fn: F,
-    ) -> Result<(), failure::Error>
+    pub fn draw_loop<T, F>(mut self, mut initial_state: T, f: f32, k: f32, update_fn: F) -> Result<(), failure::Error>
     where
-        F: FnMut(&mut T, f32, f32) -> &Matrix<f32>,
+        F: Fn(&mut T, f32, f32) -> &Matrix<f32>,
     {
         let mut window_status = WindowStatus::Open;
         loop {
