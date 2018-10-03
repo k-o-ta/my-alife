@@ -1,9 +1,11 @@
+use algorithm::gray_scott::MatrixTuple;
 use failure;
 use glium::{glutin, index, texture, Display, Program, Surface, VertexBuffer};
 use ndarray::{ArrayBase, Dim, OwnedRepr};
 use std::fs::File;
 use std::io;
 use std::io::prelude::*;
+use std::ops::Deref;
 use visualizer::WindowStatus;
 
 /// 直交座標系(XY座標系)を用いてvisualizeする構造体
@@ -102,38 +104,18 @@ impl MatrixVisualizer {
     /// * `unpdate_fn` - 描画する状態をどのように変更するかの関数
     ///
     /// # Example
-    /// ```no_run
-    /// extern crate ndarray;
-    /// extern crate my_alife;
-    ///
-    /// use my_alife::visualizer::matrix_visualizer::{Matrix, MatrixVisualizer};
-    /// use ndarray::Array2;
-    ///
-    /// let matrix = MatrixVisualizer::new(
-    ///     "Gray Scott",
-    ///     "res/shaders/matrix_visualizer_vertex.glsl",
-    ///     "res/shaders/matrix_visualizer_fragment.glsl",
-    /// );
-    /// let initial_state = (Array2::<f32>::ones((256, 256)), Array2::<f32>::ones((256, 256)));
-    /// fn update_nothing(uv: &mut (Matrix<f32>, Matrix<f32>), f: f32, k: f32) -> &Matrix<f32> {
-    ///   &uv.0
-    /// }
-    ///
-    /// matrix.unwrap().draw_loop(initial_state, 0.04, 0.06, update_nothing);
-    ///
-    ///
-    /// ```
-    pub fn draw_loop<T, F>(mut self, mut initial_state: T, f: f32, k: f32, update_fn: F) -> Result<(), failure::Error>
+    pub fn draw_loop<T, F>(mut self, mut state: T, f: f32, k: f32, update_fn: F) -> Result<(), failure::Error>
     where
-        F: Fn(&mut T, f32, f32) -> &Matrix<f32>,
+        T: AsRef<Matrix<f32>>,
+        F: Fn(&mut T, f32, f32),
     {
         let mut window_status = WindowStatus::Open;
         loop {
             if window_status == WindowStatus::Close {
                 break;
             }
-            let u = update_fn(&mut initial_state, f, k);
-            self.draw(u)?;
+            update_fn(&mut state, f, k);
+            self.draw(state.as_ref())?;
 
             window_status = self.hadling_event();
         }

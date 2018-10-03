@@ -7,6 +7,7 @@ use num::Integer;
 use num_traits::cast as num_trait_cast;
 use rand::distributions::Range;
 use std::ops::AddAssign;
+use std::ops::Deref;
 use visualizer::matrix_visualizer::Matrix;
 
 // simulation parameter
@@ -20,7 +21,8 @@ const DU: f32 = 2e-5;
 const DV: f32 = 1e-5;
 
 /// Matrixの初期状態の一例
-pub fn initial_matrix() -> (Matrix<f32>, Matrix<f32>) {
+// pub fn initial_matrix() -> (Matrix<f32>, Matrix<f32>) {
+pub fn initial_matrix() -> MatrixTuple<f32> {
     // initialize
     let mut u = Array2::<f32>::ones((256, 256));
     let mut v = Array2::<f32>::zeros((256, 256));
@@ -42,7 +44,7 @@ pub fn initial_matrix() -> (Matrix<f32>, Matrix<f32>) {
     u.add_assign(&u_rand);
     v.add_assign(&v_rand);
 
-    (u, v)
+    MatrixTuple { left: u, right: v }
 }
 
 /// 与えられたMatrixを拡散させる。ラプラシアンを使って計算する
@@ -63,7 +65,7 @@ pub fn initial_matrix() -> (Matrix<f32>, Matrix<f32>) {
 /// let mut initial_state = (Array2::<f32>::ones((256, 256)), Array2::<f32>::ones((256, 256)));
 /// let matrix = laplacian(&mut initial_state, 0.4, 0.6);
 /// ```
-pub fn laplacian(uv: &mut (Matrix<f32>, Matrix<f32>), f: f32, k: f32) -> &Matrix<f32> {
+pub fn laplacian(uv: &mut (Matrix<f32>, Matrix<f32>), f: f32, k: f32) {
     let u: &mut Matrix<f32> = &mut uv.0;
     let v: &mut Matrix<f32> = &mut uv.1;
     for _ in 0..VISUALIZATION_STEP {
@@ -80,8 +82,47 @@ pub fn laplacian(uv: &mut (Matrix<f32>, Matrix<f32>), f: f32, k: f32) -> &Matrix
         *u = (DT as f32 * dudt) + &*u;
         *v = (DT as f32 * dvdt) + &*v;
     }
-    u
 }
+
+pub fn laplacian2(uv: &mut MatrixTuple<f32>, f: f32, k: f32) {
+    let u: &mut Matrix<f32> = &mut uv.left;
+    let v: &mut Matrix<f32> = &mut uv.right;
+    for _ in 0..VISUALIZATION_STEP {
+        // ラプラシアンの計算
+        let laplacian_u =
+            (roll(&u, 1, false) + roll(&u, -1, false) + roll(&u, 1, true) + roll(&u, -1, true) - &*u * 4.0) / (DX * DX);
+        let laplacian_v =
+            (roll(&v, 1, false) + roll(&v, -1, false) + roll(&v, 1, true) + roll(&v, -1, true) - &*v * 4.0) / (DX * DX);
+
+        // Gray-Scottモデル方程式
+        let dudt = (laplacian_u * DU) - (&*u * &*v * &*v) + f * (1.0 - &*u);
+        let dvdt = (laplacian_v * DV) + (&*u * &*v * &*v) - (f + k) * &*v;
+
+        *u = (DT as f32 * dudt) + &*u;
+        *v = (DT as f32 * dvdt) + &*v;
+    }
+}
+
+// pub type MatrixTuple<T> = (Matrix<T>, Matrix<T>);
+
+pub struct MatrixTuple<T> {
+    left: Matrix<T>,
+    right: Matrix<T>,
+}
+
+impl<T> AsRef<Matrix<T>> for MatrixTuple<T> {
+    fn as_ref(&self) -> &Matrix<T> {
+        &self.left
+    }
+}
+
+// impl<T> Deref for MatrixTuple<T> {
+//     type Target = Matrix<T>;
+//
+//     fn deref(&self) -> &Matrix<T> {
+//         &self.left
+//     }
+// }
 
 fn roll<A, T>(a: &Matrix<A>, shift: T, axis: bool) -> Matrix<A>
 where
