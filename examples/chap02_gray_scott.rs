@@ -2,6 +2,7 @@ extern crate my_alife;
 
 use my_alife::algorithm::gray_scott::{initial_matrix, laplacian, laplacian2};
 use my_alife::visualizer::matrix_visualizer::MatrixVisualizer;
+use std::sync::{Arc, Mutex};
 use std::fmt::Debug;
 
 // model parameter
@@ -16,5 +17,5 @@ fn main() -> Result<(), impl Debug> {
         "res/shaders/matrix_visualizer_vertex.glsl",
         "res/shaders/matrix_visualizer_fragment.glsl",
     );
-    matrix?.draw_loop(tuple, F, K, laplacian2)
+    matrix?.draw_loop(Arc::new(Mutex::new(tuple)), F, K, laplacian2)
 }

@@ -110,9 +110,9 @@ pub struct MatrixTuple<T> {
     right: Matrix<T>,
 }
 
-impl<T> AsRef<Matrix<T>> for MatrixTuple<T> {
-    fn as_ref(&self) -> &Matrix<T> {
-        &self.left
+impl<T> AsMut<Matrix<T>> for MatrixTuple<T> {
+    fn as_mut(&mut self) -> &mut Matrix<T> {
+        &mut self.left
     }
 }
 
