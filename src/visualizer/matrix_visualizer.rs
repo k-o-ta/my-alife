@@ -3,11 +3,11 @@ use failure;
 use glium::{glutin, index, texture, Display, Program, Surface, VertexBuffer};
 use ndarray::{ArrayBase, Dim, OwnedRepr};
 use std::fs::File;
-use std::thread;
 use std::io;
 use std::io::prelude::*;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex};
+use std::thread;
 use visualizer::WindowStatus;
 
 /// 直交座標系(XY座標系)を用いてvisualizeする構造体
@@ -106,25 +106,29 @@ impl MatrixVisualizer {
     /// * `unpdate_fn` - 描画する状態をどのように変更するかの関数
     ///
     /// # Example
-    pub fn draw_loop<T: 'static, F: 'static>(mut self, mut state: Arc<Mutex<T>>, f: f32, k: f32, update_fn: F) -> Result<(), failure::Error>
+    pub fn draw_loop<T: 'static, F: 'static>(
+        mut self,
+        state: T,
+        f: f32,
+        k: f32,
+        update_fn: F,
+    ) -> Result<(), failure::Error>
     where
         T: AsMut<Matrix<f32>> + Send,
         F: Fn(&mut T, f32, f32) + Send,
-        // F: Fn(&mut Arc<Mutex<T>>, f32, f32),
-        // F: Fn(&mut Arc<Mutex<T>>, f32, f32) + Send
     {
         let mut window_status = WindowStatus::Open;
-        let mut cloned = state.clone();
-        let _t = thread::spawn( move ||
-          loop {
-              update_fn(&mut cloned.lock().unwrap(), f, k);
-          }
-        );
+        let mutex_state = Arc::new(Mutex::new(state));
+        let cloned = mutex_state.clone();
+
+        let _t = thread::spawn(move || loop {
+            update_fn(&mut cloned.lock().unwrap(), f, k);
+        });
         loop {
             if window_status == WindowStatus::Close {
                 break;
             }
-            self.draw(state.lock().unwrap().as_mut())?;
+            self.draw(mutex_state.lock().unwrap().as_mut())?;
 
             window_status = self.hadling_event();
         }
