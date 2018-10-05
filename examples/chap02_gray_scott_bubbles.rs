@@ -9,11 +9,11 @@ const F: f32 = 0.012;
 const K: f32 = 0.05;
 
 fn main() -> Result<(), impl Debug> {
-    let (u, v) = initial_matrix();
+    let state = initial_matrix();
     let matrix = MatrixVisualizer::new(
         "Gray Scott",
         "res/shaders/matrix_visualizer_vertex.glsl",
         "res/shaders/matrix_visualizer_fragment.glsl",
     );
-    matrix?.draw_loop((u, v), F, K, laplacian)
+    matrix?.draw_loop(state, F, K, laplacian)
 }
