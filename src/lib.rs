@@ -1,5 +1,5 @@
 //! # my-alife
-//! [作って動かすAlife](https://www.oreilly.co.jp/books/9784873118475/<Paste>)の[コード](https://github.com/alifelab/alife_book_src)をRustで実装してみる。Rustの勉強も兼ねて過剰にRustの機能を使ったりしている
+//! [作って動かすAlife](https://www.oreilly.co.jp/books/9784873118475/)の[コード](https://github.com/alifelab/alife_book_src)をRustで実装してみる。Rustの勉強も兼ねて過剰にRustの機能を使ったりしている
 //!
 //! ## GLSLについて
 //! 内部でglslのコードがあるが、少なくとも[このくらい](http://nn-hokuson.hatenablog.com/entry/2016/11/07/204241)を理解しているとわかりそう  

@@ -107,6 +107,7 @@ impl MatrixVisualizer {
     /// extern crate my_alife;
     ///
     /// use my_alife::visualizer::matrix_visualizer::{Matrix, MatrixVisualizer};
+    /// use my_alife::algorithm::gray_scott::{initial_matrix, DoubleMatrix};
     /// use ndarray::Array2;
     ///
     /// let matrix = MatrixVisualizer::new(
@@ -114,32 +115,25 @@ impl MatrixVisualizer {
     ///     "res/shaders/matrix_visualizer_vertex.glsl",
     ///     "res/shaders/matrix_visualizer_fragment.glsl",
     /// );
-    /// let initial_state = (Array2::<f32>::ones((256, 256)), Array2::<f32>::ones((256, 256)));
-    /// fn update_nothing(uv: &mut (Matrix<f32>, Matrix<f32>), f: f32, k: f32) -> &Matrix<f32> {
-    ///   &uv.0
-    /// }
+    /// let state = initial_matrix();
+    /// fn update_nothing(state: &mut DoubleMatrix<f32>, f: f32, k: f32) {}
     ///
-    /// matrix.unwrap().draw_loop(initial_state, 0.04, 0.06, update_nothing);
+    /// matrix.unwrap().draw_loop(state, 0.04, 0.06, update_nothing);
     ///
     ///
     /// ```
-    pub fn draw_loop<T, F>(
-        mut self,
-        mut initial_state: T,
-        f: f32,
-        k: f32,
-        mut update_fn: F,
-    ) -> Result<(), failure::Error>
+    pub fn draw_loop<T, F>(mut self, mut state: T, f: f32, k: f32, update_fn: F) -> Result<(), failure::Error>
     where
-        F: FnMut(&mut T, f32, f32) -> &Matrix<f32>,
+        T: AsRef<Matrix<f32>>,
+        F: Fn(&mut T, f32, f32),
     {
         let mut window_status = WindowStatus::Open;
         loop {
             if window_status == WindowStatus::Close {
                 break;
             }
-            let u = update_fn(&mut initial_state, f, k);
-            self.draw(u)?;
+            update_fn(&mut state, f, k);
+            self.draw(state.as_ref())?;
 
             window_status = self.hadling_event();
         }
