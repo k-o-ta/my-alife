@@ -20,7 +20,7 @@ const DU: f32 = 2e-5;
 const DV: f32 = 1e-5;
 
 /// Matrixの初期状態の一例
-pub fn initial_matrix() -> DoubleMatrix<f32> {
+pub fn initial_matrix() -> (Matrix<f32>, Matrix<f32>) {
     // initialize
     let mut u = Array2::<f32>::ones((256, 256));
     let mut v = Array2::<f32>::zeros((256, 256));
@@ -42,7 +42,7 @@ pub fn initial_matrix() -> DoubleMatrix<f32> {
     u.add_assign(&u_rand);
     v.add_assign(&v_rand);
 
-    DoubleMatrix { left: u, right: v }
+    (u, v)
 }
 
 /// 与えられたMatrixを拡散させる。ラプラシアンを使って計算する
@@ -58,14 +58,14 @@ pub fn initial_matrix() -> DoubleMatrix<f32> {
 /// extern crate my_alife;
 ///
 /// use ndarray::Array2;
-/// use my_alife::algorithm::gray_scott::{laplacian, DoubleMatrix, initial_matrix};
+/// use my_alife::algorithm::gray_scott::laplacian;
 ///
-/// let mut state = initial_matrix();
-/// laplacian(&mut state, 0.4, 0.6);
+/// let mut state = (Array2::<f32>::ones((256, 256)), Array2::<f32>::ones((256, 256)));
+/// let matrix = laplacian(&mut state, 0.4, 0.6);
 /// ```
-pub fn laplacian(uv: &mut DoubleMatrix<f32>, f: f32, k: f32) {
-    let u: &mut Matrix<f32> = &mut uv.left;
-    let v: &mut Matrix<f32> = &mut uv.right;
+pub fn laplacian(uv: &mut (Matrix<f32>, Matrix<f32>), f: f32, k: f32) {
+    let u: &mut Matrix<f32> = &mut uv.0;
+    let v: &mut Matrix<f32> = &mut uv.1;
     for _ in 0..VISUALIZATION_STEP {
         // ラプラシアンの計算
         let laplacian_u =
@@ -79,17 +79,6 @@ pub fn laplacian(uv: &mut DoubleMatrix<f32>, f: f32, k: f32) {
 
         *u = (DT as f32 * dudt) + &*u;
         *v = (DT as f32 * dvdt) + &*v;
-    }
-}
-
-pub struct DoubleMatrix<T> {
-    left: Matrix<T>,
-    right: Matrix<T>,
-}
-
-impl<T> AsRef<Matrix<T>> for DoubleMatrix<T> {
-    fn as_ref(&self) -> &Matrix<T> {
-        &self.left
     }
 }
 
