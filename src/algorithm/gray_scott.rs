@@ -63,18 +63,20 @@ pub fn initial_matrix() -> (Matrix<f32>, Matrix<f32>) {
 /// let mut state = (Array2::<f32>::ones((256, 256)), Array2::<f32>::ones((256, 256)));
 /// let matrix = laplacian(&mut state, 0.4, 0.6);
 /// ```
+///
+/// `uv`はmutableな参照である(`&mut borrow`) &mut borrowとは...
 pub fn laplacian(uv: &mut (Matrix<f32>, Matrix<f32>), f: f32, k: f32) {
     let u: &mut Matrix<f32> = &mut uv.0;
     let v: &mut Matrix<f32> = &mut uv.1;
     for _ in 0..VISUALIZATION_STEP {
         // ラプラシアンの計算
-        let laplacian_u =
+        let laplacian_u: Matrix<f32> =
             (roll(&u, 1, false) + roll(&u, -1, false) + roll(&u, 1, true) + roll(&u, -1, true) - &*u * 4.0) / (DX * DX);
         let laplacian_v =
             (roll(&v, 1, false) + roll(&v, -1, false) + roll(&v, 1, true) + roll(&v, -1, true) - &*v * 4.0) / (DX * DX);
 
         // Gray-Scottモデル方程式
-        let dudt = (laplacian_u * DU) - (&*u * &*v * &*v) + f * (1.0 - &*u);
+        let dudt: Matrix<f32> = (laplacian_u * DU) - (&*u * &*v * &*v) + f * (1.0 - &*u);
         let dvdt = (laplacian_v * DV) + (&*u * &*v * &*v) - (f + k) * &*v;
 
         *u = (DT as f32 * dudt) + &*u;

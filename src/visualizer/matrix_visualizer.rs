@@ -98,10 +98,28 @@ impl MatrixVisualizer {
     /// メインループ
     ///
     /// # Arguments
-    /// * `initail_state` - 初期状態
+    /// * `state` - 初期状態
     /// * `unpdate_fn` - 描画する状態をどのように変更するかの関数
     ///
+    /// `state`は実体を受け取っている(`move`)
+    /// dataには必ず所有者が1人だけ存在する(`ownwer`)`owner`は変数である  
+    /// `move`とはdataの所有者が変わることである。もとのownerは利用できなくなるが、dataは残る。  
+    /// `owner`がscopeから抜けたとき、dataもdropされる  
+    /// moveが発生するのは、変数束縛、関数に渡す、関数からのreturnなど
+    /// ちなみにmoveでもstack上の位置が変わるのであまりに大きいサイズのdataとかをmoveしまくるのは良くない(`Box`というのを使う)
+    /// ```
+    ///   let owner = String::from("this is data");
+    ///   let new_owner = owner;     // move (ownerは使えなくなるが、 dataは残っている)
+    ///   // println!("{}", owner);     ownerは使えない
+    ///   println!("{}", new_owner); // new_ownerが使える
+    /// ```
+    ///
+    /// [資料](https://doc.rust-lang.org/book/2018-edition/ch04-01-what-is-ownership.html)
+    /// [日本語訳](https://github.com/hazama-yuinyan/book/blob/master/second-edition/src/ch04-01-what-is-ownership.md)
+    ///
     /// # Example
+    ///
+    ///
     /// ```no_run
     /// extern crate ndarray;
     /// extern crate my_alife;
@@ -115,15 +133,21 @@ impl MatrixVisualizer {
     ///     "res/shaders/matrix_visualizer_vertex.glsl",
     ///     "res/shaders/matrix_visualizer_fragment.glsl",
     /// );
-    /// let state = (Array2::<f32>::ones((256, 256)), Array2::<f32>::ones((256, 256)));
-    /// fn update_nothing(uv: &mut (Matrix<f32>, Matrix<f32>), f: f32, k: f32) {
-    ///   &uv.0
-    /// }
-    ///
-    /// matrix.unwrap().draw_loop(state, 0.04, 0.06, update_nothing);
-    ///
-    ///
+    /// let state = (                                                 // stateのscopeはここまで
+    ///   Array2::<f32>::ones((256, 256)),                            //      |
+    ///   Array2::<f32>::ones((256, 256))                             //      |
+    /// );                                                            //      |
+    /// fn update_nothing(uv: &mut (Matrix<f32>, Matrix<f32>),        //      |
+    ///                   f: f32,                                     //      |
+    ///                   k: f32) {                                   //      |
+    /// }                                                             //      |
+    ///                                                               //      |
+    /// matrix.unwrap().draw_loop(state, 0.04, 0.06, update_nothing); // <----- move
+    ///                                                               // 以後stateは利用できない
+    ///                                                               //
+    ///                                                               //
     /// ```
+    ///
     pub fn draw_loop<F>(
         mut self,
         mut state: (Matrix<f32>, Matrix<f32>),
@@ -152,6 +176,42 @@ impl MatrixVisualizer {
     /// # Arguments
     /// * `matrix` - 描画される内容
     ///
+    /// `matrix`は参照(`borrow`)である。  
+    /// `move`しかできないと、メソッドに変数を渡した後にもう使えなくなってしまい、あまりに不便  
+    /// dataの所有権(ownership)をそのままにして、参照だけ借りることができる。データの利用者にとってはデータを借りているので`borrow`という  
+    /// ```
+    ///   let owner = String::from("this is data");
+    ///   let borrower1 = &owner;     // borrow
+    ///   let borrower2 =  &owner;    // borrow
+    ///   println!("{}", owner);      // ownerが使える
+    ///   println!("{}", borrower1);  // brrowerが使える
+    ///   println!("{}", borrower2);  // brrower2が使える
+    ///   // let new_owner = owner;   // borrow期間中にmoveはできない
+    /// ```
+    /// 借りているだけなので、制限がある。  
+    /// 1. データを変更することができない
+    /// 2. 同時に複数人が借用できるが、ownerがscopeから消える前に全ての借用が終了しなければならない(変数がscopeから抜けなければならない)
+    /// moveが発生するのは、変数束縛、関数に渡す、関数からのreturnなど
+    ///
+    /// ```no_run
+    /// extern crate ndarray;
+    /// extern crate my_alife;
+    ///
+    /// use my_alife::visualizer::matrix_visualizer::{Matrix, MatrixVisualizer};
+    /// use ndarray::Array2;
+    ///
+    /// let matrix = MatrixVisualizer::new(
+    ///     "Gray Scott",
+    ///     "res/shaders/matrix_visualizer_vertex.glsl",
+    ///     "res/shaders/matrix_visualizer_fragment.glsl",
+    /// );
+    /// let state =  Array2::<f32>::ones((256, 256));
+    /// matrix.unwrap().draw(&state); // borrowしているが、返り値のないborrowなので、borrowはこの1行で終わる
+    /// let new_owner = state;        // そのためmoveができる
+    /// ```
+    ///
+    /// [資料](https://doc.rust-lang.org/book/2018-edition/ch04-02-references-and-borrowing.html)
+    /// [日本語訳](https://github.com/hazama-yuinyan/book/blob/master/second-edition/src/ch04-02-references-and-borrowing.md)
     pub fn draw(&self, matrix: &Matrix<f32>) -> Result<(), failure::Error> {
         let image = make_texture_image(matrix);
         let texture = texture::Texture2d::new(&self.display, image);
@@ -221,6 +281,7 @@ struct Vertex {
 }
 implement_vertex!(Vertex, a_position, a_texcoord);
 
+/// lifetimeパラメーター `'a`が存在する。lifetimeとは...
 fn make_texture_image<'a>(u: &Matrix<f32>) -> texture::RawImage2d<'a, u8> {
     let mut texture_data = Vec::new();
     for row in u.outer_iter() {
