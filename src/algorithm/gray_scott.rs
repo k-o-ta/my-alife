@@ -51,8 +51,10 @@ pub fn initial_matrix() -> (Matrix<f32>, Matrix<f32>) {
 /// * `uv` - 拡散するもとのやつ
 /// * `f` - 拡散するときの変数1
 /// * `k` - 拡散するときの変数2
-/// `uv`はmutableな参照である(`&mut borrow`) &mut borrowとは...
-/// `borrow`したい(`move`したくない)が、変更もしたい、という場合に使う。つまり、`&mut
+///
+/// ## mutable reference
+/// `uv`(`&mut borrow`)はmutableな参照である
+/// `borrow`したい(`move`したくない)が、変更もしたい、という場合に使う。
 /// borrow`されたデータは必ず変更されると思って良い。  
 /// `borrow`したデータを変更できるが、複数ヶ所から同時にborrowできなくなる。
 /// ~~~
@@ -108,6 +110,7 @@ pub fn laplacian(uv: &mut (Matrix<f32>, Matrix<f32>), f: f32, k: f32) {
 /// * `f` - 拡散するときの変数1
 /// * `k` - 拡散するときの変数2
 ///
+/// ## lifetime
 /// lifetimeパラメーター `'a`が存在する。
 /// lifetimeとは __変数の生存期間__ である。ちなみにデータそのもの生存期間はscopeと言ったりする。(しかしscopeを一般的な意味で使うこともあるので文脈による...)  
 /// 変数にもownerと参照が存在するが、lifetimeで話題になるのは専ら参照のそれ。
