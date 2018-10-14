@@ -180,17 +180,22 @@ impl MatrixVisualizer {
     /// `move`しかできないと、メソッドに変数を渡した後にもう使えなくなってしまい、あまりに不便  
     /// dataの所有権(ownership)をそのままにして、参照だけ借りることができる。データの利用者にとってはデータを借りているので`borrow`という  
     /// ```
-    ///   let owner = String::from("this is data");
-    ///   let borrower1 = &owner;     // borrow
-    ///   let borrower2 =  &owner;    // borrow
-    ///   println!("{}", owner);      // ownerが使える
-    ///   println!("{}", borrower1);  // brrowerが使える
-    ///   println!("{}", borrower2);  // brrower2が使える
-    ///   // let new_owner = owner;   // borrow期間中にmoveはできない
+    ///   let owner = String::from("this is data"); // owner -----------------------------┐
+    ///   let borrower1 = &owner;                   // borrow ---------------------------┐|
+    ///   let borrower2 =  &owner;                  // borrow --------------------------┐||
+    ///   println!("{}", owner);                    //                                  |||
+    ///   println!("{}", borrower1);                //                                  |||
+    ///   println!("{}", borrower2);                //                                  |||
+    ///   // let new_owner = owner;                 // can't move while borrowing       |||
+    ///   // end of borrow2                         <-----------------------------------┘||
+    ///   // end of borrow1                        <-------------------------------------┘|
+    ///   // end of ownership                     <---------------------------------------┘
+    ///
     /// ```
     /// 借りているだけなので、制限がある。  
     /// 1. データを変更することができない
-    /// 2. 同時に複数人が借用できるが、ownerがscopeから消える前に全ての借用が終了しなければならない(変数がscopeから抜けなければならない)
+    /// 2. 同時に複数人が借用できるが、ownerがscopeから消える前に全ての借用が終了しなければならない(参照はデータより長生きしてはいけない)
+    /// つまり、dangling pointer(参照先が不定なポインタ)を防げる
     /// moveが発生するのは、変数束縛、関数に渡す、関数からのreturnなど
     ///
     /// ```no_run
@@ -205,7 +210,7 @@ impl MatrixVisualizer {
     ///     "res/shaders/matrix_visualizer_vertex.glsl",
     ///     "res/shaders/matrix_visualizer_fragment.glsl",
     /// );
-    /// let state =  Array2::<f32>::ones((256, 256));
+    /// let state = Array2::<f32>::ones((256, 256));
     /// matrix.unwrap().draw(&state); // borrowしているが、返り値のないborrowなので、borrowはこの1行で終わる
     /// let new_owner = state;        // そのためmoveができる
     /// ```
@@ -241,8 +246,7 @@ impl MatrixVisualizer {
             // みたいにcatch節的なものが必要になる(rustのパターンマッチは取り得る全パターンを明示的に書かせるため)
             if let glutin::Event::WindowEvent { event, .. } = event {
                 match event {
-                    glutin::WindowEvent::CloseRequested => status = WindowStatus::Close,
-                    glutin::WindowEvent::KeyboardInput {
+                    glutin::WindowEvent::CloseRequested => status = WindowStatus::Close, glutin::WindowEvent::KeyboardInput {
                         device_id: _,
                         input: keyboard_input,
                     } => match keyboard_input {
@@ -281,7 +285,7 @@ struct Vertex {
 }
 implement_vertex!(Vertex, a_position, a_texcoord);
 
-/// lifetimeパラメーター `'a`が存在する。lifetimeとは...
+/// 各要素が画素値を意味する2次元配列から画像データを生成する
 fn make_texture_image<'a>(u: &Matrix<f32>) -> texture::RawImage2d<'a, u8> {
     let mut texture_data = Vec::new();
     for row in u.outer_iter() {
