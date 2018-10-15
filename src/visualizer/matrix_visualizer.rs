@@ -102,12 +102,12 @@ impl MatrixVisualizer {
     /// * `unpdate_fn` - 描画する状態をどのように変更するかの関数
     ///
     /// ## move
-    /// `state`は実体を受け取っている(`move`)
-    /// dataには必ず所有者が1人だけ存在する(`ownwer`)`owner`は変数である  
-    /// `move`とはdataの所有者が変わることである。もとのownerは利用できなくなるが、dataは残る。  
-    /// `owner`がscopeから抜けたとき、dataもdropされる  
-    /// moveが発生するのは、変数束縛、関数に渡す、関数からのreturnなど
-    /// ちなみにmoveでもstack上の位置が変わるのであまりに大きいサイズのdataとかをmoveしまくるのは良くない(`Box`というのを使う)
+    /// * `state`は実体を受け取っている(`move`)
+    /// * dataには必ず所有者が1人だけ存在する(`ownwer`)`owner`は変数である
+    ///   * `move`とはdataの所有者が変わることである。もとのownerは利用できなくなるが、dataは残る
+    ///   * `owner`がscopeから抜けたとき、dataもdropされる
+    /// * moveが発生するのは、変数束縛、関数に渡す、関数からのreturnなど
+    /// * ちなみにmoveでもstack上の位置が変わるのであまりに大きいサイズのdataとかをmoveしまくるのは良くない(`Box`というのを使う)
     /// ```
     ///   let owner = String::from("this is data");
     ///   let new_owner = owner;     // move (ownerは使えなくなるが、 dataは残っている)
@@ -120,7 +120,7 @@ impl MatrixVisualizer {
     ///
     /// ## mutability
     /// * `mut`記号は左辺と右辺につくことがある。(ex. `let mut left = &mut right`)
-    ///   * 正確に話そうとするとC++のlvalueとかrvalueの話しが出てくるような気がするがあまり詳しくないのでざっくりとした理解
+    ///   * 正確に話そうとするとC++のlvalueとかrvalueの話が出てくるような気がするがあまり詳しくないのでざっくりとした理解
     /// * 左辺の`mut`は変数のbindingを変更できる、という意味である。
     /// ~~~
     /// let mut v1 = 1;
@@ -356,8 +356,10 @@ impl MatrixVisualizer {
     /// ```
     /// 借りているだけなので、制限がある。  
     /// 1. データを変更することができない
-    /// 2. 同時に複数人が借用できるが、ownerがscopeから消える前に全ての借用が終了しなければならない(参照はデータより長生きしてはいけない)
+    /// 2. 同時に複数人が借用できるが、ownerがscopeから消える前に全ての借用が終了しなければならない(参照はデータより長生きしてはいけない)  
     /// つまり、dangling pointer(参照先が不定なポインタ)を防げる
+    ///
+    ///
     /// moveが発生するのは、変数束縛、関数に渡す、関数からのreturnなど
     ///
     /// ```no_run
