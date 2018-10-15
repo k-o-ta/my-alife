@@ -403,7 +403,7 @@ impl MatrixVisualizer {
             // matchでやると
             // match event {
             //   glutin::Event::WindowEvent { event, .. } => { do_something() },
-            //   _ => { // do nothing }}
+            //   _ => { // do nothing }
             // }
             // みたいにcatch節的なものが必要になる(rustのパターンマッチは取り得る全パターンを明示的に書かせるため)
             if let glutin::Event::WindowEvent { event, .. } = event {
