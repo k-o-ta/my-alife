@@ -410,7 +410,8 @@ impl MatrixVisualizer {
             // みたいにcatch節的なものが必要になる(rustのパターンマッチは取り得る全パターンを明示的に書かせるため)
             if let glutin::Event::WindowEvent { event, .. } = event {
                 match event {
-                    glutin::WindowEvent::CloseRequested => status = WindowStatus::Close, glutin::WindowEvent::KeyboardInput {
+                    glutin::WindowEvent::CloseRequested => status = WindowStatus::Close,
+                    glutin::WindowEvent::KeyboardInput {
                         device_id: _,
                         input: keyboard_input,
                     } => match keyboard_input {
