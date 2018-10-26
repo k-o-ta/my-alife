@@ -1,15 +1,20 @@
 use failure;
-use ndarray::{Array1, Array2};
-use visualizer::matrix_visualizer::{Matrix, MatrixVisualizer};
+use ndarray::prelude::*;
+use ndarray::{arr2, Array1, Array2, FixedInitializer};
+use rand::{thread_rng, Rng};
+use visualizer::matrix_visualizer::MatrixVisualizer;
 use visualizer::WindowStatus;
+const WIDTH: usize = 50;
+const HEIGHT: usize = WIDTH;
 
+// pub type Matrix = [[u8; WIDTH]; HEIGHT];
+pub type Matrix = Vec<Vec<u8>>;
 /// 1次元配列を用いてvisualizeする構造体
 /// 内部的に1次元配列を2次元配列(Matrix)に変換する
 pub struct GameOfLifeVisualizer {
     matrix_visualizer: MatrixVisualizer,
-    hight: usize,
-    width: usize,
-    state: Matrix<i32>,
+    state: Matrix,
+    next_state: Matrix,
 }
 
 impl GameOfLifeVisualizer {
@@ -25,18 +30,26 @@ impl GameOfLifeVisualizer {
         title: &str,
         vertex_glsl_path: &str,
         faragment_glsl_path: &str,
-        width: usize,
-        height: usize,
     ) -> Result<GameOfLifeVisualizer, failure::Error> {
         let matrix_visualizer = MatrixVisualizer::new(title, vertex_glsl_path, faragment_glsl_path)?;
-        // let matrix = Array2::<f32>::zeros((history_size, initial_state.len()));
-        let status = vec![vec![0; width]; height];
-        let next_status = vec![vec![0; width]; height];
+        let state = [[0; WIDTH]; HEIGHT];
+        let next_state = [[0; WIDTH]; HEIGHT];
+        let mut rng = thread_rng();
+        let n: u8 = rng.gen_range(0, 2);
+        let mut state: Vec<Vec<u8>> = Vec::with_capacity(HEIGHT);
+        for i in 0..HEIGHT {
+            let mut inner: Vec<u8> = Vec::new();
+            for j in 0..WIDTH {
+                inner.push(rng.gen_range(0, 2));
+            }
+            state.push(inner);
+        }
+        // let state = vec![vec![0; WIDTH]; HEIGHT];
+        let next_state = vec![vec![0; WIDTH]; HEIGHT];
         Ok(GameOfLifeVisualizer {
             matrix_visualizer: matrix_visualizer,
-            height: height,
-            width: width,
-            status: status,
+            state: state,
+            next_state: next_state,
         })
     }
 
@@ -46,14 +59,9 @@ impl GameOfLifeVisualizer {
     /// * `initail_state` - 初期状態
     /// * `rule` - ウルフラムのルールコーディングの数字
     /// * `unpdate_fn` - 描画する状態をどのように変更するかの関数
-    pub fn draw_loop<F>(
-        mut self,
-        mut initial_state: (Array1<u32>, Array1<u32>),
-        rule: u8,
-        mut update_fn: F,
-    ) -> Result<(), failure::Error>
+    pub fn draw_loop<F>(mut self, mut update_fn: F) -> Result<(), failure::Error>
     where
-        F: FnMut(&mut (Array1<u32>, Array1<u32>), u8, usize),
+        F: FnMut(&mut Matrix, &mut Matrix, usize, usize),
     {
         let mut window_status = WindowStatus::Open;
 
@@ -63,18 +71,24 @@ impl GameOfLifeVisualizer {
                 break;
             }
 
-            update_fn(&mut initial_state, rule, self.history_size);
-            self.update_matrix(&initial_state.0);
-            self.matrix_visualizer.draw(&self.matrix)?;
+            update_fn(&mut self.state, &mut self.next_state, HEIGHT, WIDTH);
+            // self.update_matrix(&initial_state.0);
+            // let hoge = self.state.iter().flatten().collect::<Vec<_>>();
+            let hoge = self.state.iter().flatten().map(|e| 1.0 - *e as f32).collect::<Vec<_>>();
+            self.matrix_visualizer
+                // .draw(&ArrayView::from_shape((WIDTH, HEIGHT), &hoge).unwrap())?;
+                .draw(&Array::from_shape_vec((WIDTH, HEIGHT), hoge).unwrap())?;
             window_status = self.matrix_visualizer.hadling_event();
         }
         Ok(())
     }
 
-    fn update_matrix(&mut self, array: &Array1<u32>) {
-        self.matrix
-            .slice_mut(s![self.time_index, ..])
-            .assign(&(1.0 - array.map(|e| *e as f32)));
-        self.time_index = (self.time_index + 1) % self.history_size;
+    fn update_matrix(&mut self) {
+        // fn update_matrix(&mut self, matrix: &[[usize; 20]; 20]) {
+        // let a = arr2(matrix);
+        // self.matrix
+        //     .slice_mut(s![self.time_index, ..])
+        //     .assign(&(1.0 - array.map(|e| *e as f32)));
+        // self.time_index = (self.time_index + 1) % self.history_size;
     }
 }
