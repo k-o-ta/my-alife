@@ -3,6 +3,7 @@ pub mod matrix_visualizer;
 
 /// 一次元配列を用いてvisualizeするためのモジュール
 pub mod array_visualizer;
+pub mod game_of_life_visualizer;
 
 /// windowの状態
 #[derive(PartialEq)]
