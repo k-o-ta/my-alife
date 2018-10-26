@@ -6,7 +6,7 @@ use std::fmt::Debug;
 
 fn main() -> Result<(), impl Debug> {
     let visualizer = GameOfLifeVisualizer::new(
-        "Cellular Automata 1d",
+        "Game Of Life",
         "res/shaders/matrix_visualizer_vertex.glsl",
         "res/shaders/matrix_visualizer_fragment.glsl",
     );
