@@ -153,4 +153,31 @@ impl GameOfLifeVisualizerParallel {
         }
         Ok(())
     }
+
+    pub fn draw_loop_parallel_by_rayon<F>(mut self, mut update_fn: F) -> Result<(), failure::Error>
+    where
+        F: FnMut(&Matrix, usize, usize) -> Matrix,
+    {
+        use std::borrow::Borrow;
+        let mut window_status = WindowStatus::Open;
+
+        // main loop
+        loop {
+            if window_status == WindowStatus::Close {
+                break;
+            }
+
+            self.next_state = Arc::new(update_fn((&self.state).borrow(), HEIGHT, WIDTH));
+            // self.update_matrix(&initial_state.0);
+            // let hoge = self.state.iter().flatten().collect::<Vec<_>>();
+
+            mem::swap(&mut self.state, &mut self.next_state);
+            let hoge = self.state.iter().flatten().map(|e| 1.0 - *e as f32).collect::<Vec<_>>();
+            self.matrix_visualizer
+                // .draw(&ArrayView::from_shape((WIDTH, HEIGHT), &hoge).unwrap())?;
+                .draw(&Array::from_shape_vec((WIDTH, HEIGHT), hoge).unwrap())?;
+            window_status = self.matrix_visualizer.hadling_event();
+        }
+        Ok(())
+    }
 }

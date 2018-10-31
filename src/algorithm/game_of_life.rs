@@ -77,4 +77,41 @@ pub fn game_of_life_in_parallel(state: Arc<Vec<Vec<u8>>>, height: usize, width: 
     // mem::swap(state, next_state);
 }
 
+use rayon::prelude::*;
+pub fn game_of_life_by_rayon(state: &Vec<Vec<u8>>, height: usize, width: usize) -> Vec<Vec<u8>> {
+    use std::sync::mpsc;
+    use std::thread;
+    // let (tx, rx) = mpsc::channel();
+    // let arc_state = Arc::new(state);
+
+    (0..height)
+        .into_iter()
+        .map(|i| {
+            let mut row: Vec<u8> = Vec::with_capacity(width);
+            for j in 0..width {
+                let nw = state[(i + height - 1) % height][(j + width - 1) % width];
+                let n = state[(i + height - 1) % height][j];
+                let ne = state[(i + height - 1) % height][(j + 1) % width];
+                let w = state[i][(j + width - 1) % width];
+                let c = state[i][j];
+                let e = state[i][(j + 1) % width];
+                let sw = state[(i + 1) % height][(j + width - 1) % width];
+                let s = state[(i + 1) % height][j];
+                let se = state[(i + 1) % height][(j + 1) % width];
+                let neighbor_cell_sum = nw + n + ne + w + e + sw + s + se;
+                if c == 0 && neighbor_cell_sum == 3 {
+                    row.push(1);
+                } else if c == 1 && (neighbor_cell_sum == 2 || neighbor_cell_sum == 3) {
+                    row.push(1);
+                } else {
+                    row.push(0);
+                }
+            }
+            row
+        }).collect::<Vec<_>>()
+    // vec![vec![1]]
+    // for received in rx {}
+    // mem::swap(state, next_state);
+}
+
 // fn life_in_row(state: &Vec<Vec<u8>>) -> Vec<u8> {}
