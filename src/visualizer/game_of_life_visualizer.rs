@@ -118,11 +118,15 @@ impl GameOfLifeVisualizer {
         let ten_millis = time::Duration::from_millis(100);
 
         for (i, state) in receiver {
+            if window_status == WindowStatus::Close {
+                break;
+            }
             // println!("draw: {}", i);
             // thread::sleep(ten_millis);
             let hoge = state.iter().flatten().map(|e| 1.0 - *e as f32).collect::<Vec<_>>();
             self.matrix_visualizer
                 .draw(&Array::from_shape_vec((WIDTH, HEIGHT), hoge).unwrap())?;
+            window_status = self.matrix_visualizer.hadling_event();
         }
         Ok(())
     }
