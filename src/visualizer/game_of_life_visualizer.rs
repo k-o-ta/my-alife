@@ -1,3 +1,4 @@
+use algorithm::game_of_life::game_of_life_by_rayon;
 use failure;
 use ndarray::prelude::*;
 use ndarray::{arr2, Array1, Array2, FixedInitializer};
@@ -92,6 +93,38 @@ impl GameOfLifeVisualizer {
         //     .slice_mut(s![self.time_index, ..])
         //     .assign(&(1.0 - array.map(|e| *e as f32)));
         // self.time_index = (self.time_index + 1) % self.history_size;
+    }
+    pub fn draw_loop_parallel_by_channel<F>(mut self, mut update_fn: F) -> Result<(), failure::Error>
+    where
+        F: FnMut(&Matrix, usize, usize) -> Matrix,
+    {
+        use std::borrow::Borrow;
+        let mut window_status = WindowStatus::Open;
+        use std::sync::mpsc::channel;
+        use std::thread::spawn;
+        let (sender, receiver) = channel();
+        let mut state = self.state.clone();
+        let mut n = 0;
+        let handle = spawn(move || loop {
+            let mut new_state = game_of_life_by_rayon(&state, HEIGHT, WIDTH);
+            // println!("send: {}", n);
+            sender.send((n, new_state.clone()));
+            mem::swap(&mut new_state, &mut state);
+            n = (n + 1) % 100000;
+        });
+
+        // main loop
+        use std::{thread, time};
+        let ten_millis = time::Duration::from_millis(100);
+
+        for (i, state) in receiver {
+            // println!("draw: {}", i);
+            // thread::sleep(ten_millis);
+            let hoge = state.iter().flatten().map(|e| 1.0 - *e as f32).collect::<Vec<_>>();
+            self.matrix_visualizer
+                .draw(&Array::from_shape_vec((WIDTH, HEIGHT), hoge).unwrap())?;
+        }
+        Ok(())
     }
 }
 
