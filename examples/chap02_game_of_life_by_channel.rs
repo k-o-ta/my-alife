@@ -1,6 +1,5 @@
 extern crate my_alife;
 
-use my_alife::algorithm::game_of_life::game_of_life_by_rayon;
 use my_alife::visualizer::game_of_life_visualizer::GameOfLifeVisualizer;
 use std::fmt::Debug;
 
@@ -10,5 +9,5 @@ fn main() -> Result<(), impl Debug> {
         "res/shaders/matrix_visualizer_vertex.glsl",
         "res/shaders/matrix_visualizer_fragment.glsl",
     );
-    visualizer?.draw_loop_parallel_by_channel(game_of_life_by_rayon)
+    visualizer?.draw_loop_parallel_by_channel()
 }

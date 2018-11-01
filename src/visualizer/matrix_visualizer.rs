@@ -1,6 +1,6 @@
 use failure;
 use glium::{glutin, index, texture, Display, Program, Surface, VertexBuffer};
-use ndarray::{ArrayBase, Dim, OwnedRepr, ViewRepr};
+use ndarray::{ArrayBase, Dim, OwnedRepr};
 use std::fs::File;
 use std::io;
 use std::io::prelude::*;
@@ -449,28 +449,6 @@ struct Vertex {
     a_texcoord: [f32; 2],
 }
 implement_vertex!(Vertex, a_position, a_texcoord);
-
-// fn make_texture_image2<'a>(u: &ArrayBase<ViewRepr<&'a f32>, Dim<[usize; 2]>>) -> texture::RawImage2d<'a, u8> {
-fn make_texture_image2<'a>(u: &Matrix<&f32>) -> texture::RawImage2d<'a, u8> {
-    let mut texture_data = Vec::new();
-    for row in u.outer_iter() {
-        for e in row.iter() {
-            let v = (if **e < 0.0 {
-                0.0
-            } else if **e > 1.0 {
-                1.0
-            } else {
-                **e
-            } * 255.0) as u8;
-
-            texture_data.push(v);
-            texture_data.push(v);
-            texture_data.push(v);
-            texture_data.push(v);
-        }
-    }
-    texture::RawImage2d::from_raw_rgba(texture_data, (u.shape()[0] as u32, u.shape()[1] as u32))
-}
 
 /// 各要素が画素値を意味する2次元配列から画像データを生成する
 fn make_texture_image<'a>(u: &Matrix<f32>) -> texture::RawImage2d<'a, u8> {
