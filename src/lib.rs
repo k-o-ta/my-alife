@@ -18,6 +18,7 @@ extern crate ndarray_rand;
 extern crate num;
 extern crate num_traits;
 extern crate rand;
+extern crate rayon;
 
 extern crate failure;
 
