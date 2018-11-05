@@ -32,6 +32,7 @@ pub fn game_of_life(state: &mut Vec<Vec<u8>>, next_state: &mut Vec<Vec<u8>>, hei
     mem::swap(state, next_state);
 }
 
+use std::sync::Arc;
 /// ライフゲームのアルゴリズム
 /// 現在のstateを元に次の瞬間のstate(next_state)を計算し返り値として返す
 /// * next_stateを計算するのに、複数threadを用いて各行の値を計算し(fork)、計算結果が集まるのを待つ(join)
@@ -40,16 +41,10 @@ pub fn game_of_life(state: &mut Vec<Vec<u8>>, next_state: &mut Vec<Vec<u8>>, hei
 ///     * [std::sync::Arc(Atomic Reference Counted)](https://doc.rust-lang.org/std/sync/struct.Arc.html)
 ///   * immutableパターン
 ///
-/// state                                  next_state
-///   0 1 2                                  0 1 2
-/// 0 - - -  -┐   calculated by thread1--> 0 - - -
-/// 1 - - -  ---> calculated by thread2--> 1 - - -
-/// 2 - - -  -┘   calculated by thread3--> 2 - - -
 /// # Arguments
 /// * `state` - 現在の状態(Arc(参照のようなもの)に包まれている)
 /// * `height` - セルの縦の数
 /// * `width` - セルの横の数
-use std::sync::Arc;
 pub fn game_of_life_in_parallel(state: Arc<Vec<Vec<u8>>>, height: usize, width: usize) -> Vec<Vec<u8>> {
     use std::thread;
 
