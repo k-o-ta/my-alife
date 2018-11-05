@@ -52,6 +52,28 @@ impl GameOfLifeVisualizer {
     ///
     /// # Arguments
     /// * `unpdate_fn` - 描画する状態をどのように変更するかの関数
+    ///
+    /// # iterator
+    /// 1. Vec<Vec<u8>>をVec<u8>の形にしないとndarrayの形に変換できない
+    ///   * [[0,1,2],[3,4,5],[6,7,8]] -> [0,1,2,3,4,5,6,7,8,9]にする。
+    ///   * from_shape_vec((3,3) [0,1,2,3,4,5,6,7,8,9])すると、3つずつ取っていく
+    /// 2. stateは0だと死(白)、1だと生(黒)であるが、visualizer的には0だと黒、1だと白に表示される
+    /// 反転するためにmapの中で変換している
+    /// https://doc.rust-lang.org/book/second-edition/ch13-02-iterators.html
+    /// ## iteratorのよくある使い方
+    /// 1. iterator Traitを実装している型のデータにinto_iter(), iter(), iter_mut()を使う(それぞれmove, borrow, mutable borrowに相当する)
+    ///   * iter()
+    ///     * 各要素の所有権をiter内にmoveする。もとの配列は使えなくなる
+    ///   * into_iter()
+    ///     * iter内で使えるのは各要素の参照(最も制限が厳しい)
+    ///   * iter_mut()
+    ///     * 各要素のmutableな参照をiter内で使える
+    /// 2. mapとかfilterとかをiteratorに使うとiteratorを返す(iterator adapter)
+    ///   * [たくさんある](https://doc.rust-lang.org/std/iter/trait.Iterator.html#provided-methods)
+    ///   * ここまでは遅延評価されている
+    /// 3. collect()などconsume adapterを使うとiteratorを何らかの型に戻せる
+    ///   * ここで評価される
+    ///   * collectは何らかのiteratorを何らかのcollection型にする
     pub fn draw_loop<F>(mut self, mut update_fn: F) -> Result<(), failure::Error>
     where
         F: FnMut(&mut Matrix, &mut Matrix, usize, usize),
@@ -65,6 +87,7 @@ impl GameOfLifeVisualizer {
             }
 
             update_fn(&mut self.state, &mut self.next_state, HEIGHT, WIDTH);
+
             let state_for_show = self.state.iter().flatten().map(|e| 1.0 - *e as f32).collect::<Vec<_>>();
             self.matrix_visualizer
                 .draw(&Array::from_shape_vec((WIDTH, HEIGHT), state_for_show)?)?;
@@ -87,6 +110,12 @@ impl GameOfLifeVisualizer {
             self.next_state = update_fn(&self.state, HEIGHT, WIDTH);
 
             mem::swap(&mut self.state, &mut self.next_state);
+            // collect::<HashMap<_, _>>()とか、collect::<Result<u8, _>>とか、collect::<String>とか。
+            // let hoge: String = iterator.collect();みたいに変数側で指定してもよいし、
+            // let hoge = iterator.collect();
+            // pass_string(hoge);
+            // のように型推論で型指定を省略もできる
+            // ↓だとmap内の処理で新しい要素(u8)を作ってそれのvecを作っている。mapの返り値がeを参照しているとcollectが返す値もVec<&u8>みたいになるはず。
             let state_for_show = self.state.iter().flatten().map(|e| 1.0 - *e as f32).collect::<Vec<_>>();
             self.matrix_visualizer
                 .draw(&Array::from_shape_vec((WIDTH, HEIGHT), state_for_show)?)?;
