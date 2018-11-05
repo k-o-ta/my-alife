@@ -124,6 +124,12 @@ impl GameOfLifeVisualizer {
         Ok(())
     }
 
+    /// ライフゲームの計算用のスレッドを描画用のスレッド(main thread)と分ける
+    /// * 計算用スレッドでループを回し、1ループ毎にメインスレッドに計算結果を送る
+    /// * thread間通信には一方通行のchannelを用いる
+    /// * Producer(計算スレッド)-Consumer(描画スレッド)パターン
+    ///   * https://doc.rust-lang.org/std/sync/mpsc/index.html
+    ///   * Producerは複数いても良いがConsumerは一人のみなのでMultiProducerSingleConsumer(mpsc)
     pub fn draw_loop_parallel_by_channel(mut self) -> Result<(), failure::Error> {
         use std::sync::mpsc::channel;
         use std::thread::spawn;
@@ -134,11 +140,15 @@ impl GameOfLifeVisualizer {
         // calculation thread
         let _handle = spawn(move || loop {
             let mut new_state = game_of_life_by_rayon(&state, HEIGHT, WIDTH);
+            // channelにデータを送っている
+            // データを送るときは所有権ごと送ってしまうので、cloneしておかないと次回のloopのときにstateが使えなくなる
+            // 所有権ごと送ることでthread safeを実現している(writableなユーザーが同時に一人しか存在できない)
             let _result = sender.send(new_state.clone());
             mem::swap(&mut new_state, &mut state);
         });
 
         // main thread
+        // channelを受信するまでblockingしている
         for state in receiver {
             if window_status == WindowStatus::Close {
                 break;
