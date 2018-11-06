@@ -95,7 +95,7 @@ impl GameOfLifeVisualizer {
         }
         Ok(())
     }
-    pub fn draw_loop_parallel_by_rayon<F>(mut self, mut update_fn: F) -> Result<(), failure::Error>
+    pub fn draw_loop_parallel<F>(mut self, mut update_fn: F) -> Result<(), failure::Error>
     where
         F: FnMut(&Matrix, usize, usize) -> Matrix,
     {
