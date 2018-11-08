@@ -62,9 +62,9 @@ impl GameOfLifeVisualizer {
     /// https://doc.rust-lang.org/book/second-edition/ch13-02-iterators.html
     /// ## iteratorのよくある使い方
     /// 1. iterator Traitを実装している型のデータにinto_iter(), iter(), iter_mut()を使う(それぞれmove, borrow, mutable borrowに相当する)
-    ///   * iter()
-    ///     * 各要素の所有権をiter内にmoveする。もとの配列は使えなくなる
     ///   * into_iter()
+    ///     * 各要素の所有権をiter内にmoveする。もとの配列は使えなくなる
+    ///   * iter()
     ///     * iter内で使えるのは各要素の参照(最も制限が厳しい)
     ///   * iter_mut()
     ///     * 各要素のmutableな参照をiter内で使える
