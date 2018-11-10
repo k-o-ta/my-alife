@@ -22,7 +22,11 @@ extern crate rayon;
 
 extern crate failure;
 
+extern crate piston_window;
+
 /// パターン生成のアルゴリズム
 pub mod algorithm;
 /// 複数の描画方法をまとめたもの
 pub mod visualizer;
+
+pub mod simulator;
