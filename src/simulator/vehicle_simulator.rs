@@ -19,10 +19,10 @@ impl Eater {
             radius: 50.0,
             field_of_vision: 120.0_f64.to_radians(),
             sensor_length: 50.0 * 2.5,
-            x: 0.0,
-            y: 600.0,
-            left_speed: 15.0,
-            right_speed: 45.0,
+            x: 300.0,
+            y: 500.0,
+            left_speed: 150.0,
+            right_speed: 450.0,
             angle: 0.0,
             next_angle: 0.0,
         }
@@ -50,16 +50,21 @@ impl Eater {
             let next_angle_diff = w;
             // let next_angle_diff = 100.0;
             // let next_angle = self.angle + next_angle_diff * (t);
-            let next_angle = self.angle + delta_angle;
+            let next_angle: f64;
+            if self.angle + delta_angle > 360.0 {
+                next_angle = self.angle + delta_angle - 360.0;
+            } else {
+                next_angle = self.angle + delta_angle;
+            }
             // let trans_x: f64 = next_x * t * (next_angle * t / 2.0 + self.angle).to_radians().cos();
             // let trans_y: f64 = next_y * t * (next_angle * t / 2.0 + self.angle).to_radians().sin();
             let delta_l_dash = 2.0 * p * (delta_angle / 2.0).to_radians().sin();
             let trans_x: f64 = delta_l_dash * (self.angle + delta_l_dash / 2.0).to_radians().cos();
             let trans_y: f64 = delta_l_dash * (self.angle + delta_l_dash / 2.0).to_radians().sin();
-            println!(
-                "angle: {}, delta_angle: {}, next_angle_diff: {}, trans_x: {}, trans_y: {}",
-                self.angle, delta_angle, next_angle_diff, trans_x, trans_y
-            );
+            // println!(
+            //     "angle: {}, delta_angle: {}, next_angle_diff: {}, trans_x: {}, trans_y: {}",
+            //     self.angle, delta_angle, next_angle_diff, trans_x, trans_y
+            // );
 
             // sensor
             let sensor_color = [0.5, 0.5, 0.5, 1.0];
@@ -94,12 +99,19 @@ impl Eater {
 
             // center_line
             let center_line_color = [0.5, 0.5, 0.5, 1.0];
-            line(center_line_color, 1.0, [0.0, 0.0, self.radius, 0.0], start_point, g);
+            let center = [self.x, self.y, self.x + self.radius, self.y];
+            let zero_center = [0.0, 0.0, self.radius, 0.0];
+            let transed = c.transform.trans(self.x, self.y);
+            // line(center_line_color, 1.0, [0.0, 0.0, self.radius, 0.0], start_point, g);
+            // line(center_line_color, 1.0, center, c.transform.rot_deg(next_angle), g);
+            // line(center_line_color, 1.0, center, c.transform.rot_deg(30.0), g);
+            line(center_line_color, 1.0, zero_center, transed.rot_deg(-next_angle), g); // 初期値じゃなくてtransで移さないとrotateの原点が移らない?
+            // line(center_line_color, 1.0, center, c.transform, g);
 
             self.x = self.x + trans_x;
             self.y = self.y - trans_y;
             self.angle = next_angle;
-            println!("x: {}, y: {}", self.x, self.y);
+            println!("x: {}, y: {}, next_angle: {}", self.x, self.y, next_angle);
         });
     }
 }
