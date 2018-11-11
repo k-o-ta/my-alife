@@ -69,9 +69,9 @@ fn eater(size: (u32, u32)) {
         eater.render(
             &mut window,
             &e,
-            (rng.gen_range(100, 900) as f64, rng.gen_range(300, 500) as f64),
-            &arena
+            (rng.gen_range(100, 900) as f64, rng.gen_range(300, 500) as f64), // 直進のときだけ動きが速い
             // (200 as f64, 200 as f64),
+            &arena,
         );
     }
 }

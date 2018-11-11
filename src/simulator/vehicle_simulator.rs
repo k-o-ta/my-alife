@@ -101,17 +101,16 @@ impl Eater {
         w.draw_2d(e, |c, g| {
             clear([1.0, 1.0, 1.0, 1.0], g);
             arena.draw(c, g);
-            let t = 1.0;
+            let t = 0.1;
             let start_point = c.transform.trans((150) as f64, (150) as f64);
 
             let v = (action.0 + action.1) / 2.0;
             let w = (action.1 - action.0) / (2.0 * self.radius);
-            let p = self.radius * (action.0 + action.1) / (action.1 - action.0);
 
             let l_l = action.0 * t;
             let l_r = action.1 * t;
-            let l = (l_l + l_r) / 2.0;
-            let delta_angle = (l_r - l_l) / (2.0 * self.radius);
+            let l = (l_l + l_r) / 2.0; // delta-l
+            let delta_angle = (l_r - l_l) / (2.0 * self.radius); // dleta-theta
 
             let next_x = v * self.angle.to_radians().cos();
             let next_y = v * self.angle.to_radians().sin();
@@ -126,12 +125,27 @@ impl Eater {
             }
             // let trans_x: f64 = next_x * t * (next_angle * t / 2.0 + self.angle).to_radians().cos();
             // let trans_y: f64 = next_y * t * (next_angle * t / 2.0 + self.angle).to_radians().sin();
-            let delta_l_dash = 2.0 * p * (delta_angle / 2.0).to_radians().sin();
-            let trans_x: f64 = delta_l_dash * (self.angle + delta_l_dash / 2.0).to_radians().cos();
-            let trans_y: f64 = delta_l_dash * (self.angle + delta_l_dash / 2.0).to_radians().sin();
+            let mut p = 0.0;
+            let mut trans_x: f64 = 0.0;
+                let mut trans_y: f64 = 0.0;
+            if action.1 != action.0 {
+              p = self.radius * (action.0 + action.1) / (action.1 - action.0);
+              let delta_l_dash = 2.0 * p * (delta_angle / 2.0).to_radians().sin();
+              // trans_x = delta_l_dash * (self.angle + delta_l_dash / 2.0).to_radians().cos();
+              // trans_y = delta_l_dash * (self.angle + delta_l_dash / 2.0).to_radians().sin();
+              trans_x = delta_l_dash * (self.angle + delta_angle / 2.0).to_radians().cos();
+              trans_y = delta_l_dash * (self.angle + delta_angle / 2.0).to_radians().sin();
+            } else {
+              // trans_x = l * (self.angle + delta_angle / 2.0).to_radians().cos();
+              // trans_y = l * (self.angle + delta_angle / 2.0).to_radians().sin();
+              trans_x = next_x * t *(self.angle + delta_angle / 2.0).to_radians().cos();
+              trans_y = next_y * t*(self.angle + delta_angle / 2.0).to_radians().sin();
+            }
+                // println!("trans_x: {}", trans_x);
+                // thread::sleep(time::Duration::from_millis(100));
             // println!(
-            //     "angle: {}, delta_angle: {}, next_angle_diff: {}, trans_x: {}, trans_y: {}",
-            //     self.angle, delta_angle, next_angle_diff, trans_x, trans_y
+            //     "angle: {}, delta_angle: {}, next_angle_diff: {}, trans_x: {}, trans_y: {}, delta_l_dash: {}, p: {}, delta_angle: {}",
+            //     self.angle, delta_angle, next_angle_diff, trans_x, trans_y, delta_l_dash , p , delta_angle
             // );
 
             let transed = c.transform.trans(self.x, self.y);
@@ -244,10 +258,10 @@ impl Sensor {
         if let Some(i) = inter {
             let i_point = (self.x + dir_x * i.toi, self.y + dir_y * i.toi);
             let collide = ((self.x - i_point.0).powi(2) + (y - i_point.1).powi(2)).sqrt() < self.length;
-            println!(
-                "x: {}, y: {},i_point: {:?},  f_of_v: {}, angle: {}, toi: {}, collide: {}",
-                self.x, y, i_point, self.field_of_vision, self.angle, i.toi, collide
-            );
+            // println!(
+            //     "x: {}, y: {},i_point: {:?},  f_of_v: {}, angle: {}, toi: {}, collide: {}",
+            //     self.x, y, i_point, self.field_of_vision, self.angle, i.toi, collide
+            // );
             if collide {
                 // thread::sleep(time::Duration::from_millis(10000));
             }
