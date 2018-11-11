@@ -54,6 +54,7 @@ fn ray(size: (u32, u32)) {
 }
 
 fn eater(size: (u32, u32)) {
+    let mut arena = Arena::new(size.0 as f64, size.1 as f64);
     let mut eater = Eater::new((300.0, 500.0), size.1 as f64);
     let mut window: PistonWindow = WindowSettings::new("Hello Piston!", size)
         .exit_on_esc(true)
@@ -69,6 +70,7 @@ fn eater(size: (u32, u32)) {
             &mut window,
             &e,
             (rng.gen_range(100, 900) as f64, rng.gen_range(300, 500) as f64),
+            &arena
             // (200 as f64, 200 as f64),
         );
     }
