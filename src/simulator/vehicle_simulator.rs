@@ -66,6 +66,7 @@ impl Eater {
             //     self.angle, delta_angle, next_angle_diff, trans_x, trans_y
             // );
 
+            let transed = c.transform.trans(self.x, self.y);
             // sensor
             let sensor_color = [0.5, 0.5, 0.5, 1.0];
             let left_sensor = [
@@ -74,21 +75,16 @@ impl Eater {
                 self.sensor_length * (self.field_of_vision / 2.0).cos(),
                 self.sensor_length * (self.field_of_vision / 2.0).sin(),
             ];
-            // println!(
-            //     "radi: {}, cos: {}, sin: {}, {:?}",
-            //     self.field_of_vision / 2.0,
-            //     (self.field_of_vision / 2.0).cos(),
-            //     (self.field_of_vision / 2.0).sin(),
-            //     left_sensor
-            // );
             let right_sensor = [
                 0.0,
                 0.0,
                 self.sensor_length * (-self.field_of_vision / 2.0).cos(),
                 self.sensor_length * (-self.field_of_vision / 2.0).sin(),
             ];
-            line(sensor_color, 1.0, left_sensor, start_point, g);
-            line(sensor_color, 1.0, right_sensor, start_point, g);
+            line(sensor_color, 1.0, left_sensor, transed.rot_deg(-next_angle), g);
+            line(sensor_color, 1.0, right_sensor, transed.rot_deg(-next_angle), g);
+            // line(sensor_color, 1.0, left_sensor, start_point, g);
+            // line(sensor_color, 1.0, right_sensor, start_point, g);
             // let right_sensor = [0.0, 0.0, self.radius * -cos1/2, self.radius * -sin 1/2];
 
             // eater
@@ -101,7 +97,7 @@ impl Eater {
             let center_line_color = [0.5, 0.5, 0.5, 1.0];
             let center = [self.x, self.y, self.x + self.radius, self.y];
             let zero_center = [0.0, 0.0, self.radius, 0.0];
-            let transed = c.transform.trans(self.x, self.y);
+            // let transed = c.transform.trans(self.x, self.y);
             // line(center_line_color, 1.0, [0.0, 0.0, self.radius, 0.0], start_point, g);
             // line(center_line_color, 1.0, center, c.transform.rot_deg(next_angle), g);
             // line(center_line_color, 1.0, center, c.transform.rot_deg(30.0), g);
