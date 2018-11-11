@@ -1,20 +1,76 @@
 extern crate my_alife;
+extern crate nalgebra as na;
+extern crate ncollide2d;
 extern crate piston_window;
+extern crate rand;
+
 use my_alife::simulator::vehicle_simulator::*;
+use na::{Isometry2, Point2, Vector2};
+use ncollide2d::query::{Ray, RayCast, RayInterferencesCollector};
+use ncollide2d::shape::Cuboid;
 use piston_window::*;
+use rand::{thread_rng, Rng};
+use std::sync::Arc;
+
 fn main() {
-    eater();
+    // eater();
+    let size = (1200, 900);
+    // ray(size);
+    ray_test();
+    eater(size);
+}
+fn ray_test() {
+    println!("{}", 3.0_f64.powf(1.0 / 2.0));
+    let cuboid = Cuboid::new(Vector2::new(20.0, 20.0));
+    let ray_inside = Ray::new(Point2::new(10.0, 10.0), Vector2::y());
+    let ray_inside2 = Ray::new(Point2::new(10.0, 10.0), Vector2::new(3.0_f64.powf(1.0 / 2.0), 1.0));
+    let inter = cuboid
+        .toi_and_normal_with_ray(&Isometry2::identity(), &ray_inside, false)
+        .unwrap();
+    println!("toi: {}, normal: {}", inter.toi, inter.normal);
+    let inter2 = cuboid
+        .toi_and_normal_with_ray(&Isometry2::identity(), &ray_inside2, false)
+        .unwrap();
+    println!("toi: {}, normal: {}", inter2.toi, inter2.normal);
 }
 
-fn eater() {
-    let mut eater = Eater::new();
-    let mut window: PistonWindow = WindowSettings::new("Hello Piston!", (1200, 900))
+fn ray(size: (u32, u32)) {
+    // let vec = Vector2::new(1.0, 2.0);
+    let y = Vector2::y();
+    println!("v1: {}, v2: {}", Vector2::new(3.0, 1.0), y);
+    let _ray = Ray::new(Point2::new(150.0, 150.0), y);
+    let vec = Vector2::new(1.0, 1.0);
+    let hit_ray = Ray::new(Point2::new(150.0, 150.0), vec);
+    let arena = Arena::new(size.0 as f64, size.1 as f64);
+    let intersection = arena
+        .cuboid
+        .toi_and_normal_with_ray(&arena.transformed, &hit_ray, false)
+        .unwrap();
+    // .toi_and_normal_with_ray(&iso, &hit_ray, false);
+    //
+    println!("toi: {}, normal: {}", intersection.toi, intersection.normal);
+
+    // println!("point2: {}, vec: {}", Point2::new(2.0, 2.0), vec);
+}
+
+fn eater(size: (u32, u32)) {
+    let mut eater = Eater::new((300.0, 500.0), size.1 as f64);
+    let mut window: PistonWindow = WindowSettings::new("Hello Piston!", size)
         .exit_on_esc(true)
         .build()
         .unwrap_or_else(|e| panic!("Failed to build PistonWindow: {}", e));
     let mut t = 0;
+    let mut rng = thread_rng();
+    let speed_l = rng.gen_range(300, 500) as f64;
+    let speed_r = rng.gen_range(100, 200);
     while let Some(e) = window.next() {
-        eater.render(&mut window, &e);
+        // eater.render(&mut window, &e, (150.0, 450.0));
+        eater.render(
+            &mut window,
+            &e,
+            (rng.gen_range(100, 900) as f64, rng.gen_range(300, 500) as f64),
+            // (200 as f64, 200 as f64),
+        );
     }
 }
 fn run() {
