@@ -18,13 +18,26 @@ impl Arena {
         let resize = 0.9;
         let x_diff = window_x * (1.0 - resize) * 0.5;
         let y_diff = window_y * (1.0 - resize) * 0.5;
-        let transformed = Isometry2::new(Vector2::new(x_diff, y_diff), na::zero());
-        // println!(
-        //     "x_diff: {}, y_diff: {},se: {:?}",
-        //     x_diff,
-        //     y_diff,
-        //     (window_x - x_diff, window_y - y_diff)
-        // );
+        // let transformed = Isometry2::new(Vector2::new(x_diff, y_diff), na::zero());
+        let transformed = Isometry2::new(
+            Vector2::new(
+                x_diff + (window_x - x_diff * 2.0) / 2.0,
+                y_diff + (window_y - y_diff * 2.0) / 2.0,
+            ),
+            na::zero(),
+        );
+        // let transformed = Isometry2::identity();
+        // let _t = ;
+        println!(
+            "x_diff: {}, y_diff: {}, cubic_pos: {:?},se: {:?}",
+            x_diff,
+            y_diff,
+            (window_x - x_diff * 2.0, window_y - y_diff * 2.0),
+            (
+                (window_x - x_diff * 2.0) * 0.5 + x_diff + (window_x - x_diff * 2.0) / 2.0,
+                (window_y - y_diff * 2.0) * 0.5 + y_diff + (window_y - y_diff * 2.0) / 2.0,
+            )
+        );
 
         Arena {
             nw: (x_diff, y_diff),
@@ -32,8 +45,8 @@ impl Arena {
             cuboid: Cuboid::new(Vector2::new(
                 // (window_x - x_diff * 2.0) * 0.5,
                 // (window_y - y_diff * 2.0) * 0.5,
-                (window_x - x_diff * 2.0),
-                (window_y - y_diff * 2.0),
+                (window_x - x_diff * 2.0) * 0.5,
+                (window_y - y_diff * 2.0) * 0.5,
             )),
             transformed: transformed,
         }
@@ -186,6 +199,7 @@ impl Eater {
             };
             let red = [1.0, 0.0, 0.0, 1.0];
             // ellipse(red.clone(), square, start_point.trans(0.0, 0.0), g);
+            // thread::sleep(time::Duration::from_millis(9000));
             ellipse(color, square, c.transform, g);
 
             // center_line
@@ -199,9 +213,9 @@ impl Eater {
             line(center_line_color, 1.0, zero_center, transed.rot_deg(-next_angle), g); // 初期値じゃなくてtransで移さないとrotateの原点が移らない?
             // line(center_line_color, 1.0, center, c.transform, g);
 
-            self.is_collide(arena);
-            println!("left_sensor data: {:?}", self.left_sensor.data(arena));
-            println!("right_sensor data: {:?}", self.right_sensor.data(arena));
+            // self.is_collide(arena);
+            // println!("left_sensor data: {:?}", self.left_sensor.data(arena));
+            // println!("right_sensor data: {:?}", self.right_sensor.data(arena));
             self.x = self.x + trans_x;
             self.y = self.y - trans_y;
             self.angle = next_angle;
@@ -212,7 +226,13 @@ impl Eater {
     }
     pub fn is_collide(&self, arena: &Arena) -> bool {
         // self.left_sensor.is_collide(arena) || self.right_sensor.is_collide(arena)
-        self.left_sensor.is_collide(arena)
+        println!("left collide");
+        let l = self.left_sensor.is_collide(arena);
+        println!("right collide");
+        let r = self.right_sensor.is_collide(arena);
+        l || r
+        // self.left_sensor.is_collide(arena)
+        // self.right_sensor.is_collide(arena)
     }
 }
 struct Sensor {
@@ -257,8 +277,9 @@ impl Sensor {
     pub fn is_collide(&self, arena: &Arena) -> bool {
         if let Some(distance) = self.distance(arena) {
             let collide = distance < self.length;
+            // println!("distance: {}, length: {}", distance, self.length);
             if collide {
-                // thread::sleep(time::Duration::from_millis(10000));
+                // thread::sleep(time::Duration::from_millis(3000));
             }
             return collide;
         }
@@ -276,15 +297,21 @@ impl Sensor {
     }
 
     fn distance(&self, arena: &Arena) -> Option<f64> {
-        let theta = self.field_of_vision + self.angle;
+        let theta = self.field_of_vision + self.angle.to_radians();
         let dir_x = theta.cos();
         let dir_y = theta.sin();
         let y = 900.0 - self.y;
         let ray = Ray::new(Point2::new(self.x, y), Vector2::new(dir_x, dir_y));
         let inter = arena.cuboid.toi_and_normal_with_ray(&arena.transformed, &ray, false);
         if let Some(i) = inter {
-            let i_point = (self.x + dir_x * i.toi, self.y + dir_y * i.toi);
+            let i_point = (self.x + dir_x * i.toi, y + dir_y * i.toi);
             let distance = ((self.x - i_point.0).powi(2) + (y - i_point.1).powi(2)).sqrt();
+            println!(
+                "x: {}, y: {}, sub_y : {}, angle: {}, toi: {}, dir_x: {}, dir_y: {}, distance: {}, i_point: {:?}",
+                self.x, self.y, y, self.angle, i.toi, dir_x, dir_y, distance, i_point
+            );
+            println!("i_point: {:?}", i_point);
+            // thread::sleep(time::Duration::from_millis(9000));
             return Some(distance);
         }
         None
