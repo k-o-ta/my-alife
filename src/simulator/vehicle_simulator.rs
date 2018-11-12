@@ -9,7 +9,8 @@ use std::{thread, time};
 // gfx_graphics::back_end
 pub struct Arena {
     nw: (f64, f64),
-    se: (f64, f64),
+    width: f64,
+    height: f64,
     pub cuboid: Cuboid<f64>,
     pub transformed: Isometry2<f64>,
 }
@@ -41,7 +42,8 @@ impl Arena {
 
         Arena {
             nw: (x_diff, y_diff),
-            se: (window_x - x_diff, window_y - y_diff),
+            width: window_x - x_diff * 2.0,
+            height: window_y - y_diff * 2.0,
             cuboid: Cuboid::new(Vector2::new(
                 // (window_x - x_diff * 2.0) * 0.5,
                 // (window_y - y_diff * 2.0) * 0.5,
@@ -55,7 +57,7 @@ impl Arena {
     pub fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>) {
         let blue = [0.0, 0.0, 1.0, 1.0];
         Rectangle::new_border(blue, 1.5).draw(
-            [self.nw.0, self.nw.1, self.se.0, self.se.1],
+            [self.nw.0, self.nw.1, self.width, self.height], // (x, y, width, height)
             &c.draw_state,
             c.transform,
             g,
@@ -102,7 +104,7 @@ impl Eater {
                 [0.5, 0.5, 0.5, 1.0],
                 radius * 2.5,
             ),
-            right_speed: 450.0,
+            right_speed: 350.0,
             angle: 0.0,
             next_angle: 0.0,
         }
@@ -113,8 +115,20 @@ impl Eater {
     {
         w.draw_2d(e, |c, g| {
             clear([1.0, 1.0, 1.0, 1.0], g);
+            // let square2 = ellipse::circle(0.0, 0.0, 50.0);
+            // let red = [1.0, 0.0, 0.0, 1.0];
+            // let center2 = c.transform.trans((1140) as f64, (0) as f64);
+            // // let center2 = c.transform;
+            // ellipse(
+            //     red.clone(),
+            //     square2,
+            //     center2,
+            //     g,
+            // );
+            //
+            let action = (self.left_speed, self.right_speed);
             arena.draw(c, g);
-            let t = 0.1;
+            let t = 1.0;
             let start_point = c.transform.trans((150) as f64, (150) as f64);
 
             let v = (action.0 + action.1) / 2.0;
@@ -201,6 +215,17 @@ impl Eater {
             // ellipse(red.clone(), square, start_point.trans(0.0, 0.0), g);
             // thread::sleep(time::Duration::from_millis(9000));
             ellipse(color, square, c.transform, g);
+            if let Some(data) = self.left_sensor.data(arena) {
+              self.left_speed = 90.0 + 400.0 * data;
+            }
+            if let Some(data) = self.right_sensor.data(arena) {
+              self.right_speed = 100.0 + 400.0 * data;
+                if data > 0.0 {
+
+                thread::sleep(time::Duration::from_millis(3000));
+                }
+            }
+            println!("{:?}", (self.left_speed, self.right_speed));
 
             // center_line
             let center_line_color = [0.5, 0.5, 0.5, 1.0];
@@ -210,7 +235,8 @@ impl Eater {
             // line(center_line_color, 1.0, [0.0, 0.0, self.radius, 0.0], start_point, g);
             // line(center_line_color, 1.0, center, c.transform.rot_deg(next_angle), g);
             // line(center_line_color, 1.0, center, c.transform.rot_deg(30.0), g);
-            line(center_line_color, 1.0, zero_center, transed.rot_deg(-next_angle), g); // 初期値じゃなくてtransで移さないとrotateの原点が移らない?
+            // 初期値じゃなくてtransで移さないとrotateの原点が移らない?
+            line(center_line_color, 1.0, zero_center, transed.rot_deg(-next_angle), g);
             // line(center_line_color, 1.0, center, c.transform, g);
 
             // self.is_collide(arena);
@@ -310,7 +336,7 @@ impl Sensor {
                 "x: {}, y: {}, sub_y : {}, angle: {}, toi: {}, dir_x: {}, dir_y: {}, distance: {}, i_point: {:?}",
                 self.x, self.y, y, self.angle, i.toi, dir_x, dir_y, distance, i_point
             );
-            println!("i_point: {:?}", i_point);
+            // println!("i_point: {:?}", i_point);
             // thread::sleep(time::Duration::from_millis(9000));
             return Some(distance);
         }
