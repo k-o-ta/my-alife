@@ -179,9 +179,14 @@ impl Eater {
 
             // eater
             let square = ellipse::circle(self.x, self.y, self.radius); // 中心が(0,0)
+            let color = if self.is_collide(arena) {
+                [1.0, 1.0, 0.0, 1.0]
+            }else {
+                [0.0, 1.0, 0.0, 1.0]
+            };
             let red = [1.0, 0.0, 0.0, 1.0];
             // ellipse(red.clone(), square, start_point.trans(0.0, 0.0), g);
-            ellipse(red.clone(), square, c.transform, g);
+            ellipse(color, square, c.transform, g);
 
             // center_line
             let center_line_color = [0.5, 0.5, 0.5, 1.0];
@@ -195,6 +200,8 @@ impl Eater {
             // line(center_line_color, 1.0, center, c.transform, g);
 
             self.is_collide(arena);
+            println!("left_sensor data: {:?}", self.left_sensor.data(arena));
+            println!("right_sensor data: {:?}", self.right_sensor.data(arena));
             self.x = self.x + trans_x;
             self.y = self.y - trans_y;
             self.angle = next_angle;
@@ -248,26 +255,39 @@ impl Sensor {
         line(self.color, 1.0, left_sensor, transed.rot_deg(-next_angle), g);
     }
     pub fn is_collide(&self, arena: &Arena) -> bool {
-        let theta = self.field_of_vision + self.angle;
-        let dir_x = theta.cos();
-        let dir_y = theta.sin();
-        // (x + (field_of_vision / 2.0).cos(), y + (field_of_vision / 2.0).sin()),
-        let y = 900.0 - self.y;
-        let ray = Ray::new(Point2::new(self.x, y), Vector2::new(dir_x, dir_y));
-        let inter = arena.cuboid.toi_and_normal_with_ray(&arena.transformed, &ray, false);
-        if let Some(i) = inter {
-            let i_point = (self.x + dir_x * i.toi, self.y + dir_y * i.toi);
-            let collide = ((self.x - i_point.0).powi(2) + (y - i_point.1).powi(2)).sqrt() < self.length;
-            // println!(
-            //     "x: {}, y: {},i_point: {:?},  f_of_v: {}, angle: {}, toi: {}, collide: {}",
-            //     self.x, y, i_point, self.field_of_vision, self.angle, i.toi, collide
-            // );
+        if let Some(distance) = self.distance(arena) {
+            let collide = distance < self.length;
             if collide {
                 // thread::sleep(time::Duration::from_millis(10000));
             }
             return collide;
         }
         false
+    }
+
+    pub fn data(&self, arena: &Arena) -> Option<f64> {
+        if let Some(distance) = self.distance(arena) {
+            if distance >= self.length {
+                return Some(0.0);
+            }
+            return Some(1.0 - distance / self.length);
+        }
+        None
+    }
+
+    fn distance(&self, arena: &Arena) -> Option<f64> {
+        let theta = self.field_of_vision + self.angle;
+        let dir_x = theta.cos();
+        let dir_y = theta.sin();
+        let y = 900.0 - self.y;
+        let ray = Ray::new(Point2::new(self.x, y), Vector2::new(dir_x, dir_y));
+        let inter = arena.cuboid.toi_and_normal_with_ray(&arena.transformed, &ray, false);
+        if let Some(i) = inter {
+            let i_point = (self.x + dir_x * i.toi, self.y + dir_y * i.toi);
+            let distance = ((self.x - i_point.0).powi(2) + (y - i_point.1).powi(2)).sqrt();
+            return Some(distance);
+        }
+        None
     }
 }
 
