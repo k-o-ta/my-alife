@@ -126,7 +126,7 @@ impl Eater {
             //     g,
             // );
             //
-            let action = (self.left_speed, self.right_speed);
+            let action = (self.left_speed , self.right_speed );
             arena.draw(c, g);
             let t = 1.0;
             let start_point = c.transform.trans((150) as f64, (150) as f64);
@@ -137,7 +137,8 @@ impl Eater {
             let l_l = action.0 * t;
             let l_r = action.1 * t;
             let l = (l_l + l_r) / 2.0; // delta-l
-            let delta_angle = (l_r - l_l) / (2.0 * self.radius); // dleta-theta
+            // let delta_angle = (l_r - l_l) / (2.0 * self.radius); // dleta-theta
+            let delta_angle = 90.0*(l_r -l_l) / (self.radius*3.14); // dleta-theta
 
             let next_x = v * self.angle.to_radians().cos();
             let next_y = v * self.angle.to_radians().sin();
@@ -156,8 +157,10 @@ impl Eater {
             let mut trans_x: f64 = 0.0;
                 let mut trans_y: f64 = 0.0;
             if action.1 != action.0 {
-              p = self.radius * (action.0 + action.1) / (action.1 - action.0);
+              // p = self.radius * (action.0 + action.1) / (action.1 - action.0);
+              p =  l * (360.0/ delta_angle) * (1.0/(2.0*3.14));
               let delta_l_dash = 2.0 * p * (delta_angle / 2.0).to_radians().sin();
+                println!("delta_l: {}, delta_r: {}, delata_angle: {}, p: {}, delta_l :{}", action.0, action.1,delta_angle,  p, delta_l_dash);
               // trans_x = delta_l_dash * (self.angle + delta_l_dash / 2.0).to_radians().cos();
               // trans_y = delta_l_dash * (self.angle + delta_l_dash / 2.0).to_radians().sin();
               trans_x = delta_l_dash * (self.angle + delta_angle / 2.0).to_radians().cos();
@@ -216,16 +219,16 @@ impl Eater {
             // thread::sleep(time::Duration::from_millis(9000));
             ellipse(color, square, c.transform, g);
             if let Some(data) = self.left_sensor.data(arena) {
-              self.left_speed = 90.0 + 400.0 * data;
+              self.left_speed = 1.0 + 2.0 * data;
             }
             if let Some(data) = self.right_sensor.data(arena) {
-              self.right_speed = 100.0 + 400.0 * data;
+              self.right_speed = 2.0 + 2.0 * data;
                 if data > 0.0 {
 
-                thread::sleep(time::Duration::from_millis(3000));
+                // thread::sleep(time::Duration::from_millis(3000));
                 }
             }
-            println!("{:?}", (self.left_speed, self.right_speed));
+            // println!("{:?}", (self.left_speed, self.right_speed));
 
             // center_line
             let center_line_color = [0.5, 0.5, 0.5, 1.0];
@@ -332,10 +335,10 @@ impl Sensor {
         if let Some(i) = inter {
             let i_point = (self.x + dir_x * i.toi, y + dir_y * i.toi);
             let distance = ((self.x - i_point.0).powi(2) + (y - i_point.1).powi(2)).sqrt();
-            println!(
-                "x: {}, y: {}, sub_y : {}, angle: {}, toi: {}, dir_x: {}, dir_y: {}, distance: {}, i_point: {:?}",
-                self.x, self.y, y, self.angle, i.toi, dir_x, dir_y, distance, i_point
-            );
+            // println!(
+            //     "x: {}, y: {}, sub_y : {}, angle: {}, toi: {}, dir_x: {}, dir_y: {}, distance: {}, i_point: {:?}",
+            //     self.x, self.y, y, self.angle, i.toi, dir_x, dir_y, distance, i_point
+            // );
             // println!("i_point: {:?}", i_point);
             // thread::sleep(time::Duration::from_millis(9000));
             return Some(distance);
