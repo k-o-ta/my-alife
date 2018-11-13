@@ -96,6 +96,7 @@ impl Eater {
                 (x + (field_of_vision / 2.0).cos(), y + (field_of_vision / 2.0).sin()),
                 [0.5, 0.5, 0.5, 1.0],
                 radius * 2.5,
+                radius,
             ),
             right_sensor: Sensor::new(
                 (x, y),
@@ -103,6 +104,7 @@ impl Eater {
                 (x + (-field_of_vision / 2.0).cos(), y + (-field_of_vision / 2.0).sin()),
                 [0.5, 0.5, 0.5, 1.0],
                 radius * 2.5,
+                radius,
             ),
             right_speed: 350.0,
             angle: 0.0,
@@ -253,6 +255,9 @@ impl Eater {
             // println!("x: {}, y: {}, next_angle: {}", self.x, self.y, next_angle);
         });
     }
+    pub fn is_touched(&self, arena: &Arena) -> bool {
+        true
+    }
     pub fn is_collide(&self, arena: &Arena) -> bool {
         // self.left_sensor.is_collide(arena) || self.right_sensor.is_collide(arena)
         println!("left collide");
@@ -273,9 +278,17 @@ struct Sensor {
     ray: Ray<f64>,
     color: [f32; 4],
     length: f64,
+    radius: f64,
 }
 impl Sensor {
-    pub fn new(orig: (f64, f64), field_of_vision: f64, dir: (f64, f64), color: [f32; 4], length: f64) -> Sensor {
+    pub fn new(
+        orig: (f64, f64),
+        field_of_vision: f64,
+        dir: (f64, f64),
+        color: [f32; 4],
+        length: f64,
+        radius: f64,
+    ) -> Sensor {
         let ray = Ray::new(Point2::new(orig.0, orig.1), Vector2::new(dir.0, dir.1));
         Sensor {
             x: orig.0,
@@ -286,6 +299,7 @@ impl Sensor {
             ray,
             color,
             length,
+            radius,
         }
     }
     pub fn update(&mut self, pos: (f64, f64), angle: f64) {
@@ -320,7 +334,7 @@ impl Sensor {
             if distance >= self.length {
                 return Some(0.0);
             }
-            return Some(1.0 - distance / self.length);
+            return Some(1.0 - (distance - self.radius) / (self.length - self.radius));
         }
         None
     }
