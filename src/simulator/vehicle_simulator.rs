@@ -2,6 +2,7 @@ use gfx_device_gl::{CommandBuffer, Resources};
 use gfx_graphics::GfxGraphics;
 use na;
 use na::{Isometry2, Point2, Vector2};
+use ncollide2d::query::PointQuery;
 use ncollide2d::query::{Ray, RayCast, RayInterferencesCollector};
 use ncollide2d::shape::Cuboid;
 use piston_window::*;
@@ -89,7 +90,7 @@ impl Eater {
             field_of_vision: field_of_vision,
             x: x,
             y: y,
-            left_speed: 150.0,
+            left_speed: 2.0,
             left_sensor: Sensor::new(
                 (x, y),
                 field_of_vision / 2.0,
@@ -106,7 +107,7 @@ impl Eater {
                 radius * 2.5,
                 radius,
             ),
-            right_speed: 350.0,
+            right_speed: 1.0,
             angle: 0.0,
             next_angle: 0.0,
         }
@@ -170,6 +171,7 @@ impl Eater {
             } else {
               // trans_x = l * (self.angle + delta_angle / 2.0).to_radians().cos();
               // trans_y = l * (self.angle + delta_angle / 2.0).to_radians().sin();
+                println!("delta_l: {}, delta_r: {}, angle: {}, delata_angle: {}, next_x: {}, next_y: {}", action.0, action.1,self.angle, delta_angle, next_x, next_y);
               trans_x = next_x * t *(self.angle + delta_angle / 2.0).to_radians().cos();
               trans_y = next_y * t*(self.angle + delta_angle / 2.0).to_radians().sin();
             }
@@ -211,20 +213,25 @@ impl Eater {
 
             // eater
             let square = ellipse::circle(self.x, self.y, self.radius); // 中心が(0,0)
-            let color = if self.is_collide(arena) {
+            let mut color = if self.is_collide(arena) {
                 [1.0, 1.0, 0.0, 1.0]
             }else {
                 [0.0, 1.0, 0.0, 1.0]
             };
-            let red = [1.0, 0.0, 0.0, 1.0];
+            if self.is_touched(arena) {
+               color =[1.0, 0.0, 0.0, 1.0]
+            };
             // ellipse(red.clone(), square, start_point.trans(0.0, 0.0), g);
             // thread::sleep(time::Duration::from_millis(9000));
             ellipse(color, square, c.transform, g);
             if let Some(data) = self.left_sensor.data(arena) {
               self.left_speed = 1.0 + 2.0 * data;
+              // self.left_speed = 2.0 + 2.0 * data;
+              // self.left_speed = self.left_speed + 2.0 * data;
             }
             if let Some(data) = self.right_sensor.data(arena) {
               self.right_speed = 2.0 + 2.0 * data;
+              // self.right_speed = self.right_speed + 2.0 * data;
                 if data > 0.0 {
 
                 // thread::sleep(time::Duration::from_millis(3000));
@@ -256,8 +263,12 @@ impl Eater {
         });
     }
     pub fn is_touched(&self, arena: &Arena) -> bool {
-        true
+        let point = Point2::new(self.x, self.y);
+        let distance = arena.cuboid.distance_to_point(&arena.transformed, &point, false);
+        // println!("distance: {}", distance);
+        -distance < (self.radius)
     }
+
     pub fn is_collide(&self, arena: &Arena) -> bool {
         // self.left_sensor.is_collide(arena) || self.right_sensor.is_collide(arena)
         println!("left collide");
