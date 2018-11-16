@@ -14,10 +14,14 @@ use std::sync::Arc;
 
 fn main() {
     // eater();
-    let size = (1200, 900);
+    let size = (600, 480);
     // ray(size);
     ray_test();
-    eater(size);
+    // eater(size);
+    simulation(size);
+}
+fn simulation(size: (u32, u32)) {
+    Simulator::new(size).run();
 }
 fn ray_test() {
     println!("{}", 3.0_f64.powf(1.0 / 2.0));
@@ -55,7 +59,7 @@ fn ray(size: (u32, u32)) {
 
 fn eater(size: (u32, u32)) {
     let mut arena = Arena::new(size.0 as f64, size.1 as f64);
-    let mut eater = Eater::new((300.0, 500.0), size.1 as f64);
+    let mut eater = Eater::new((100.0, 100.0), size.1 as f64);
     let mut window: PistonWindow = WindowSettings::new("Hello Piston!", size)
         .exit_on_esc(true)
         .build()
@@ -76,7 +80,8 @@ fn eater(size: (u32, u32)) {
     }
 }
 fn run() {
-    let mut window: PistonWindow = WindowSettings::new("Hello Piston!", (1200, 900))
+    // let mut window: PistonWindow = WindowSettings::new("Hello Piston!", (1200, 900))
+    let mut window: PistonWindow = WindowSettings::new("Hello Piston!", (400, 300))
         .exit_on_esc(true)
         .build()
         .unwrap_or_else(|e| panic!("Failed to build PistonWindow: {}", e));

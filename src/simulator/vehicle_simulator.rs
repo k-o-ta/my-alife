@@ -4,10 +4,43 @@ use na;
 use na::{Isometry2, Point2, Vector2};
 use ncollide2d::query::PointQuery;
 use ncollide2d::query::{Ray, RayCast, RayInterferencesCollector};
-use ncollide2d::shape::Cuboid;
+use ncollide2d::shape::{Ball, Cuboid};
 use piston_window::*;
 use std::{thread, time};
 // gfx_graphics::back_end
+
+pub struct Simulator {
+    display_size: (u32, u32),
+    arena: Arena,
+    eater: Eater,
+}
+impl Simulator {
+    pub fn new(display_size: (u32, u32)) -> Simulator {
+        let arena = Arena::new(display_size.0 as f64, display_size.1 as f64);
+        let eater = Eater::new((100.0, 100.0), display_size.1 as f64);
+
+        Simulator {
+            display_size: display_size,
+            arena: arena,
+            eater: eater,
+        }
+    }
+    pub fn run(&mut self) {
+        let mut window: PistonWindow = WindowSettings::new("Hello Piston!", self.display_size)
+            .exit_on_esc(true)
+            .build()
+            .unwrap_or_else(|e| panic!("Failed to build PistonWindow: {}", e));
+        while let Some(e) = window.next() {
+            self.eater.render(
+                &mut window,
+                &e,
+                (0.0 as f64, 0.0 as f64), // unused
+                &self.arena,
+            );
+        }
+    }
+}
+
 pub struct Arena {
     nw: (f64, f64),
     width: f64,
@@ -15,6 +48,7 @@ pub struct Arena {
     window_height: f64,
     pub cuboid: Cuboid<f64>,
     pub transformed: Isometry2<f64>,
+    obstacles: Vec<Obstacle>,
 }
 impl Arena {
     pub fn new(window_x: f64, window_y: f64) -> Arena {
@@ -41,6 +75,11 @@ impl Arena {
                 (window_y - y_diff * 2.0) * 0.5 + y_diff + (window_y - y_diff * 2.0) / 2.0,
             )
         );
+        let obstacles = vec![Obstacle {
+            x: 200.0,
+            y: 200.0,
+            radius: 10.0,
+        }];
 
         Arena {
             nw: (x_diff, y_diff),
@@ -54,6 +93,7 @@ impl Arena {
             )),
             window_height: window_y,
             transformed: transformed,
+            obstacles: obstacles,
         }
     }
 
@@ -65,6 +105,9 @@ impl Arena {
             c.transform,
             g,
         );
+        for o in &self.obstacles {
+            o.draw(c, g);
+        }
     }
 }
 pub struct Eater {
@@ -142,7 +185,7 @@ impl Eater {
               self.right_speed = 1.0;
               self.update(-trans_x, -trans_y, next_angle);
               self.back = self.back - 1;
-              println!("back!!!!!!!!!!!!: {}, trans_x: {}, trans_y: {}, self_x: {}, self_y: {}, angle: {}, delta_angle: {}", self.back, trans_x, trans_y,  self.x, self.y, self.angle, delta_angle);
+              // println!("back!!!!!!!!!!!!: {}, trans_x: {}, trans_y: {}, self_x: {}, self_y: {}, angle: {}, delta_angle: {}", self.back, trans_x, trans_y,  self.x, self.y, self.angle, delta_angle);
               return ;
             }
 
@@ -155,17 +198,17 @@ impl Eater {
 
             let delta_l = action.0 * t;
             let delta_r = action.1 * t;
-            let l = (delta_l + delta_r) / 2.0; // delta-l
             let delta_angle = delta_angle(delta_l, delta_r, self.radius); // dleta-theta
 
             let next_angle = (self.angle + delta_angle) % 360.0;
             let (trans_x, trans_y) = if action.1 != action.0 {
+              let l = (delta_l + delta_r) / 2.0; // delta-l
               let p =  l * (360.0/ delta_angle) * (1.0/(2.0*3.14));
               let delta_l_dash = 2.0 * p * (delta_angle / 2.0).to_radians().sin();
-              println!("delta_l: {}, delta_r: {}, delata_angle: {}, p: {}, delta_l :{}", action.0, action.1,delta_angle,  p, delta_l_dash);
-              (delta_l_dash * (self.angle + delta_angle / 2.0).to_radians().cos(),delta_l_dash * (self.angle + delta_angle / 2.0).to_radians().sin())
+              // println!("delta_l: {}, delta_r: {}, delata_angle: {}, p: {}, delta_l :{}", action.0, action.1,delta_angle,  p, delta_l_dash);
+              (delta_l_dash * (self.angle + delta_angle / 2.0).to_radians().cos(), delta_l_dash * (self.angle + delta_angle / 2.0).to_radians().sin())
             } else {
-              println!("delta_l: {}, delta_r: {}, angle: {}, delata_angle: {}", action.0, action.1,self.angle, delta_angle);
+              // println!("delta_l: {}, delta_r: {}, angle: {}, delata_angle: {}", action.0, action.1,self.angle, delta_angle);
               (v * t *(self.angle + delta_angle / 2.0).to_radians().cos(), v * t *(self.angle + delta_angle / 2.0).to_radians().sin())
             };
 
@@ -292,11 +335,23 @@ impl Sensor {
     }
 
     fn distance(&self, arena: &Arena) -> Option<f64> {
+        println!("distance: ");
         let theta = self.field_of_vision + self.angle.to_radians();
         let dir_x = theta.cos();
         let dir_y = theta.sin();
         let y = arena.window_height - self.y;
         let ray = Ray::new(Point2::new(self.x, y), Vector2::new(dir_x, dir_y));
+        // obstacles distance
+        for obstacle in &arena.obstacles {
+            let ball = Ball::new(obstacle.radius);
+            let transformed = Isometry2::new(Vector2::new(obstacle.x, obstacle.y), na::zero());
+            let intersection = ball.toi_and_normal_with_ray(&transformed, &ray, false);
+            if let Some(i) = intersection {
+                println!("time: {}", i.toi);
+            }
+            // obstacle.
+        }
+
         let inter = arena.cuboid.toi_and_normal_with_ray(&arena.transformed, &ray, false);
         if let Some(i) = inter {
             let i_point = (self.x + dir_x * i.toi, y + dir_y * i.toi);
@@ -316,6 +371,11 @@ struct Obstacle {
 impl Obstacle {
     pub fn new(x: f64, y: f64, radius: f64) -> Obstacle {
         Obstacle { x, y, radius }
+    }
+    pub fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>) {
+        let square = ellipse::circle(self.x, self.y, self.radius);
+        let blue = [0.0, 0.0, 1.0, 1.0];
+        ellipse(blue, square, c.transform, g);
     }
 }
 
