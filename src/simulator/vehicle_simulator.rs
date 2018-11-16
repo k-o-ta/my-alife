@@ -136,81 +136,94 @@ impl Eater {
             let action = (self.left_speed , self.right_speed );
             arena.draw(c, g);
             let t = 1.0;
+
             if self.back > 0 {
-            let action = (-self.left_speed , -self.right_speed );
-            let v = (action.0 + action.1) / 2.0;
-            let l_l = action.0 * t;
-            let l_r = action.1 * t;
-            // let delta_angle = (l_r - l_l) / (2.0 * self.radius); // dleta-theta
-            let delta_angle = 90.0*(l_r -l_l) / (self.radius*3.14); // dleta-theta
-            let next_x = v * self.angle.to_radians().cos();
-            let next_y = v * self.angle.to_radians().sin();
-              let trans_x = next_x * t *(self.angle + delta_angle / 2.0).to_radians().cos();
-              let trans_y = next_y * t*(self.angle + delta_angle / 2.0).to_radians().sin();
+              let action = (-self.left_speed , -self.right_speed );
+              let action2 = (-self.left_speed , -self.right_speed );
+              let v = (action.0 + action.1) / 2.0;
+              let v2 = (action2.0 + action2.1) / 2.0;
+              let l_l = action.0 * t;
+              let l_r = action.1 * t;
+            let l = (l_l + l_r) / 2.0; // delta-l
+              // let delta_angle = (l_r - l_l) / (2.0 * self.radius); // dleta-theta
+              let delta_angle = 90.0*(l_r -l_l) / (self.radius*3.14); // dleta-theta
+              // let p =  l * (360.0/ delta_angle) * (1.0/(2.0*3.14));
+              // let delta_l_dash = 2.0 * p * (delta_angle / 2.0).to_radians().sin();
+              // let trans_x = delta_l_dash * (self.angle + delta_angle / 2.0).to_radians().cos();
+              // let trans_y = delta_l_dash * (self.angle + delta_angle / 2.0).to_radians().sin();
+              let next_x = v * self.angle.to_radians().cos();
+              let next_y = v * self.angle.to_radians().sin();
+              // let trans_x = next_x * t *(self.angle + delta_angle / 2.0).to_radians().cos();
+              // let trans_y = next_y * t*(self.angle + delta_angle / 2.0).to_radians().sin();
+              let trans_x = -v * t *(self.angle + delta_angle / 2.0).to_radians().cos();
+              let trans_y = -v * t *(self.angle + delta_angle / 2.0).to_radians().sin();
+
               let mut next_angle = 0.0;
-            if self.angle + delta_angle > 360.0 {
-                 next_angle = self.angle + delta_angle - 360.0;
-            } else {
-                 next_angle = self.angle + delta_angle;
-            }
+              if self.angle + delta_angle > 360.0 {
+                   next_angle = self.angle + delta_angle - 360.0;
+              } else {
+                   next_angle = self.angle + delta_angle;
+              }
 
 
-            let transed = c.transform.trans(self.x, self.y);
-            // sensor
-            let left_sensor = [
-                0.0,
-                0.0,
-                self.left_sensor.length * (self.field_of_vision / 2.0).cos(),
-                // self.left_sensor.length * (self.field_of_vision / 2.0).sin(),
-                -(self.left_sensor.length * (self.field_of_vision / 2.0).sin()),
-            ];
-            let right_sensor = [
-                0.0,
-                0.0,
-                self.right_sensor.length * (-self.field_of_vision / 2.0).cos(),
-                // self.right_sensor.length * (-self.field_of_vision / 2.0).sin(),
-                -(self.right_sensor.length * (-self.field_of_vision / 2.0).sin()),
-            ];
-            self.left_sensor.draw(c, g, next_angle);
-            self.right_sensor.draw(c, g, next_angle);
-            let square = ellipse::circle(self.x, self.y, self.radius); // 中心が(0,0)
-            let mut color = if self.is_collide(arena) {
-                [1.0, 1.0, 0.0, 1.0]
-            }else {
-                [0.0, 1.0, 0.0, 1.0]
-            };
-            if self.is_touched(arena) {
-               color =[1.0, 0.0, 0.0, 1.0]
-            };
-            ellipse(color, square, c.transform, g);
-              self.left_speed = 1.0;
-              self.right_speed = 1.0;
+              let transed = c.transform.trans(self.x, self.y);
+              // sensor
+              let left_sensor = [
+                  0.0,
+                  0.0,
+                  self.left_sensor.length * (self.field_of_vision / 2.0).cos(),
+                  // self.left_sensor.length * (self.field_of_vision / 2.0).sin(),
+                  -(self.left_sensor.length * (self.field_of_vision / 2.0).sin()),
+              ];
+              let right_sensor = [
+                  0.0,
+                  0.0,
+                  self.right_sensor.length * (-self.field_of_vision / 2.0).cos(),
+                  // self.right_sensor.length * (-self.field_of_vision / 2.0).sin(),
+                  -(self.right_sensor.length * (-self.field_of_vision / 2.0).sin()),
+              ];
+              self.left_sensor.draw(c, g, next_angle);
+              self.right_sensor.draw(c, g, next_angle);
+              let square = ellipse::circle(self.x, self.y, self.radius); // 中心が(0,0)
+              let mut color = if self.is_collide(arena) {
+                  [1.0, 1.0, 0.0, 1.0]
+              }else {
+                  [0.0, 1.0, 0.0, 1.0]
+              };
+              if self.is_touched(arena) {
+                 color =[1.0, 0.0, 0.0, 1.0]
+              };
+              ellipse(color, square, c.transform, g);
+                self.left_speed = 1.0;
+                self.right_speed = 1.0;
 
-            // center_line
-            let center_line_color = [0.5, 0.5, 0.5, 1.0];
-            let center = [self.x, self.y, self.x + self.radius, self.y];
-            let zero_center = [0.0, 0.0, self.radius, 0.0];
-            // let transed = c.transform.trans(self.x, self.y);
-            // line(center_line_color, 1.0, [0.0, 0.0, self.radius, 0.0], start_point, g);
-            // line(center_line_color, 1.0, center, c.transform.rot_deg(next_angle), g);
-            // line(center_line_color, 1.0, center, c.transform.rot_deg(30.0), g);
-            // 初期値じゃなくてtransで移さないとrotateの原点が移らない?
-            line(center_line_color, 1.0, zero_center, transed.rot_deg(-next_angle), g);
-            // line(center_line_color, 1.0, center, c.transform, g);
+              // center_line
+              let center_line_color = [0.5, 0.5, 0.5, 1.0];
+              let center = [self.x, self.y, self.x + self.radius, self.y];
+              let zero_center = [0.0, 0.0, self.radius, 0.0];
+              // let transed = c.transform.trans(self.x, self.y);
+              // line(center_line_color, 1.0, [0.0, 0.0, self.radius, 0.0], start_point, g);
+              // line(center_line_color, 1.0, center, c.transform.rot_deg(next_angle), g);
+              // line(center_line_color, 1.0, center, c.transform.rot_deg(30.0), g);
+              // 初期値じゃなくてtransで移さないとrotateの原点が移らない?
+              line(center_line_color, 1.0, zero_center, transed.rot_deg(-next_angle), g);
+              // line(center_line_color, 1.0, center, c.transform, g);
 
-            // self.is_collide(arena);
-            // println!("left_sensor data: {:?}", self.left_sensor.data(arena));
-            // println!("right_sensor data: {:?}", self.right_sensor.data(arena));
-            // self.x = self.x + trans_x;
-            // self.y = self.y - trans_y;
-            self.x = self.x - trans_x;
-            self.y = self.y + trans_y;
-            self.angle = next_angle;
-            self.left_sensor.update((self.x, self.y), self.angle);
-            self.right_sensor.update((self.x, self.y), self.angle);
-            self.back = self.back - 1;
-            println!("back!!!!!!!!!!!!: {}, trans_x: {}, trans_y: {}, self_x: {}, self_y: {}", self.back, trans_x, trans_y, self.x, self.y);
-            return ;
+              // self.is_collide(arena);
+              // println!("left_sensor data: {:?}", self.left_sensor.data(arena));
+              // println!("right_sensor data: {:?}", self.right_sensor.data(arena));
+              // self.x = self.x + trans_x;
+              // self.y = self.y - trans_y;
+              self.x = self.x - trans_x;
+              self.y = self.y + trans_y;
+              self.angle = next_angle;
+              self.left_sensor.update((self.x, self.y), self.angle);
+              self.right_sensor.update((self.x, self.y), self.angle);
+              self.back = self.back - 1;
+              // println!("back!!!!!!!!!!!!: {}, trans_x: {}, trans_y: {}, self_x: {}, self_y: {}, next_x: {}, next_y: {}, angle: {}, delta_angle: {}", self.back, trans_x, trans_y, self.x, self.y, next_x, next_y, self.angle, delta_angle);
+              // println!("back!!!!!!!!!!!!: {}, trans_x: {}, trans_y: {}, delta_l_dash: {}, self_x: {}, self_y: {}, angle: {}, delta_angle: {}", self.back, trans_x, trans_y, delta_l_dash, self.x, self.y, self.angle, delta_angle);
+              println!("back!!!!!!!!!!!!: {}, trans_x: {}, trans_y: {}, self_x: {}, self_y: {}, angle: {}, delta_angle: {}", self.back, trans_x, trans_y,  self.x, self.y, self.angle, delta_angle);
+              return ;
 
 
 
@@ -230,7 +243,7 @@ impl Eater {
 
             }
 if self.is_touched(&arena)  {
-        self.back = 50;
+        self.back = 25;
         return;
 }
             let start_point = c.transform.trans((150) as f64, (150) as f64);
