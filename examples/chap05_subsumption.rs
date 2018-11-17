@@ -7,7 +7,7 @@ extern crate rand;
 use my_alife::simulator::vehicle_simulator::*;
 use na::{Isometry2, Point2, Vector2};
 use ncollide2d::query::{Ray, RayCast, RayInterferencesCollector};
-use ncollide2d::shape::Cuboid;
+use ncollide2d::shape::{Ball, Cuboid};
 use piston_window::*;
 use rand::{thread_rng, Rng};
 use std::sync::Arc;
@@ -25,9 +25,11 @@ fn simulation(size: (u32, u32)) {
 }
 fn ray_test() {
     println!("{}", 3.0_f64.powf(1.0 / 2.0));
+    let ball = Ball::new(5.0);
     let cuboid = Cuboid::new(Vector2::new(20.0, 20.0));
     let ray_inside = Ray::new(Point2::new(10.0, 10.0), Vector2::y());
     let ray_inside2 = Ray::new(Point2::new(10.0, 10.0), Vector2::new(3.0_f64.powf(1.0 / 2.0), 1.0));
+    let ray_inside3 = Ray::new(Point2::new(-10.0, 0.0), Vector2::x());
     let inter = cuboid
         .toi_and_normal_with_ray(&Isometry2::identity(), &ray_inside, false)
         .unwrap();
@@ -36,6 +38,10 @@ fn ray_test() {
         .toi_and_normal_with_ray(&Isometry2::identity(), &ray_inside2, false)
         .unwrap();
     println!("toi: {}, normal: {}", inter2.toi, inter2.normal);
+    let inter3 = ball
+        .toi_and_normal_with_ray(&Isometry2::identity(), &ray_inside3, false)
+        .unwrap();
+    println!("toi3: {}, normal3: {}", inter3.toi, inter3.normal);
 }
 
 fn ray(size: (u32, u32)) {

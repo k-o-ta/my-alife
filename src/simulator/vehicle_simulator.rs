@@ -77,8 +77,8 @@ impl Arena {
         );
         let obstacles = vec![Obstacle {
             x: 200.0,
-            y: 200.0,
-            radius: 10.0,
+            y: 220.0,
+            radius: 50.0,
         }];
 
         Arena {
@@ -225,8 +225,23 @@ impl Eater {
     }
     pub fn is_touched(&self, arena: &Arena) -> bool {
         let point = Point2::new(self.x, self.y);
-        let distance = arena.cuboid.distance_to_point(&arena.transformed, &point, false);
-        -distance < (self.radius)
+        let mut distance = -arena.cuboid.distance_to_point(&arena.transformed, &point, false);
+
+        for obstacle in &arena.obstacles {
+            // let point = Point2::new(self.x, arena.window_height - self.y);
+            let point = Point2::new(self.x, arena.window_height - self.y);
+            let ball = Ball::new(obstacle.radius);
+            let transformed = Isometry2::new(Vector2::new(obstacle.x, arena.window_height - obstacle.y), na::zero());
+            // let transformed = Isometry2::new(Vector2::new(obstacle.x, obstacle.y), na::zero());
+            let o_distance = ball.distance_to_point(&transformed, &point, false);
+            // println!("o distance: {}, arana_distance: {}", o_distance, distance);
+            if distance > o_distance {
+                println!("o distance: {}", o_distance);
+                distance = o_distance
+                // thread::sleep(time::Duration::from_millis(3000));
+            }
+        }
+        distance < (self.radius)
     }
 
     pub fn is_collide(&self, arena: &Arena) -> bool {
@@ -241,12 +256,12 @@ impl Eater {
         self.right_sensor.draw(c, g, next_angle);
         let square = ellipse::circle(self.x, self.y, self.radius);
         let mut color = if self.is_collide(arena) {
-            [1.0, 1.0, 0.0, 1.0]
+            [1.0, 1.0, 0.0, 1.0] // yellow
         } else {
-            [0.0, 1.0, 0.0, 1.0]
+            [0.0, 1.0, 0.0, 1.0] // green
         };
         if self.is_touched(arena) {
-            color = [1.0, 0.0, 0.0, 1.0]
+            color = [1.0, 0.0, 0.0, 1.0] //red
         };
         ellipse(color, square, c.transform, g);
 
@@ -335,30 +350,58 @@ impl Sensor {
     }
 
     fn distance(&self, arena: &Arena) -> Option<f64> {
-        println!("distance: ");
         let theta = self.field_of_vision + self.angle.to_radians();
         let dir_x = theta.cos();
         let dir_y = theta.sin();
         let y = arena.window_height - self.y;
         let ray = Ray::new(Point2::new(self.x, y), Vector2::new(dir_x, dir_y));
+        let inter = arena.cuboid.toi_and_normal_with_ray(&arena.transformed, &ray, false);
+        let mut closest_toi: f64 = inter.map_or(f64::MAX, |intersection| intersection.toi);
         // obstacles distance
         for obstacle in &arena.obstacles {
             let ball = Ball::new(obstacle.radius);
-            let transformed = Isometry2::new(Vector2::new(obstacle.x, obstacle.y), na::zero());
+            let transformed = Isometry2::new(Vector2::new(obstacle.x, arena.window_height - obstacle.y), na::zero());
+            // let transformed = Isometry2::new(Vector2::new(obstacle.x, obstacle.y), na::zero());
             let intersection = ball.toi_and_normal_with_ray(&transformed, &ray, false);
             if let Some(i) = intersection {
-                println!("time: {}", i.toi);
+                if closest_toi > i.toi {
+                    closest_toi = i.toi;
+                }
             }
-            // obstacle.
         }
-
-        let inter = arena.cuboid.toi_and_normal_with_ray(&arena.transformed, &ray, false);
-        if let Some(i) = inter {
-            let i_point = (self.x + dir_x * i.toi, y + dir_y * i.toi);
-            let distance = ((self.x - i_point.0).powi(2) + (y - i_point.1).powi(2)).sqrt();
-            return Some(distance);
-        }
-        None
+        // println!(
+        //     "time: {}, distance: {}",
+        //     closest_toi,
+        //     self.intersection_distance(dir_x, dir_y, closest_toi, y)
+        // );
+        Some(self.intersection_distance(dir_x, dir_y, closest_toi, y))
+        // let closest_toi = arena
+        //     .obstacles
+        //     .iter()
+        //     .map(|obstacle| {
+        //         let ball = Ball::new(obstacle.radius);
+        //         let transformed = Isometry2::new(Vector2::new(obstacle.x, obstacle.y), na::zero());
+        //         ball.toi_and_normal_with_ray(&transformed, &ray, false)
+        //             .map_or(f64::MAX, |intersection| intersection.toi)
+        //     }).fold(0.0 / 0.0, |m, v| v.min(m));
+        //
+        // if closest_toi == f64::NAN && arena_toi == f64::NAN {
+        //     None
+        // } else if closest_toi == f64::NAN && arena_toi != f64::NAN {
+        //     Some(self.intersection_distance(dir_x, dir_y, arena_toi, y))
+        // } else {
+        //     Some(self.intersection_distance(dir_x, dir_y, closest_toi, y))
+        // }
+        // if let Some(i) = inter {
+        //     let i_point = (self.x + dir_x * i.toi, y + dir_y * i.toi);
+        //     let distance = ((self.x - i_point.0).powi(2) + (y - i_point.1).powi(2)).sqrt();
+        //     return Some(distance);
+        // }
+        // None
+    }
+    fn intersection_distance(&self, dir_x: f64, dir_y: f64, toi: f64, y: f64) -> f64 {
+        let i_point = (self.x + dir_x * toi, y + dir_y * toi);
+        ((self.x - i_point.0).powi(2) + (y - i_point.1).powi(2)).sqrt()
     }
 }
 
