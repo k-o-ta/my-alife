@@ -17,7 +17,10 @@ pub struct Simulator {
 impl Simulator {
     pub fn new(display_size: (u32, u32)) -> Simulator {
         let arena = Arena::new(display_size.0 as f64, display_size.1 as f64);
-        let eater = Eater::new((100.0, 100.0), display_size.1 as f64);
+        let orig_x = arena.nw.0 + 50.0;
+        let orig_y = (arena.nw.1 + arena.height) / 2.0 - 30.0;
+        let eater = Eater::new((orig_x, orig_y), display_size.1 as f64);
+        // let eater = Eater::new((100.0, 100.0), display_size.1 as f64);
 
         Simulator {
             display_size: display_size,
@@ -75,11 +78,13 @@ impl Arena {
                 (window_y - y_diff * 2.0) * 0.5 + y_diff + (window_y - y_diff * 2.0) / 2.0,
             )
         );
-        let obstacles = vec![Obstacle {
-            x: 200.0,
-            y: 220.0,
-            radius: 50.0,
-        }];
+        let obstacles = vec![
+            Obstacle::new(150.0, 225.0, 30.0),
+            Obstacle::new(300.0, 100.0, 30.0),
+            Obstacle::new(450.0, 225.0, 30.0),
+            Obstacle::new(375.0, 400.0, 30.0),
+            Obstacle::new(225.0, 400.0, 30.0),
+        ];
 
         Arena {
             nw: (x_diff, y_diff),
@@ -127,7 +132,7 @@ pub struct Eater {
 use std::f64;
 impl Eater {
     pub fn new(orig: (f64, f64), height: f64) -> Eater {
-        let radius = 50.0;
+        let radius = 30.0;
         let x = orig.0;
         let y = height - orig.1;
         let field_of_vision = 120.0_f64.to_radians();
@@ -142,7 +147,7 @@ impl Eater {
                 field_of_vision / 2.0,
                 (x + (field_of_vision / 2.0).cos(), y + (field_of_vision / 2.0).sin()),
                 [0.5, 0.5, 0.5, 1.0],
-                radius * 2.5,
+                radius * 4.0,
                 radius,
             ),
             right_sensor: Sensor::new(
@@ -150,7 +155,7 @@ impl Eater {
                 -field_of_vision / 2.0,
                 (x + (-field_of_vision / 2.0).cos(), y + (-field_of_vision / 2.0).sin()),
                 [0.5, 0.5, 0.5, 1.0],
-                radius * 2.5,
+                radius * 4.0,
                 radius,
             ),
             right_speed: 1.0,
