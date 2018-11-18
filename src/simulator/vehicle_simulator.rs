@@ -88,8 +88,8 @@ impl Arena {
             Obstacle::new(150.0, 225.0, 30.0),
             Obstacle::new(300.0, 100.0, 30.0),
             Obstacle::new(450.0, 225.0, 30.0),
-            Obstacle::new(375.0, 400.0, 30.0),
-            Obstacle::new(225.0, 400.0, 30.0),
+            Obstacle::new(375.0, 380.0, 30.0),
+            Obstacle::new(225.0, 380.0, 30.0),
         ];
         let feeds = vec![
             Feed::new(100.0, 100.0, 3.0),
@@ -204,7 +204,8 @@ impl Eater {
             let t = 1.0;
 
             self.eat(arena);
-            if self.back > 0 {
+            // if self.back > 0 && !self.is_touched(&arena){
+            if (self.back > 0 && !self.is_touched(arena)) || (self.back == 25 && self.is_touched(arena)){
               let action = (-self.left_speed , -self.right_speed );
               let v = (action.0 + action.1) / 2.0;
 
@@ -224,7 +225,7 @@ impl Eater {
               return ;
             }
 
-            if self.is_touched(&arena)  {
+            if self.is_touched(&arena) && self.back == 0 {
               self.back = 25;
               return;
             }
