@@ -65,6 +65,7 @@ impl Module for WanderModule {
             self.left_speed = self.child_module.get_wheelspeed().0;
             self.right_speed = self.child_module.get_wheelspeed().1;
         } else if self.counter == Self::TURN_START_STEP {
+            println!("into wander");
             let random: f64 = thread_rng().gen();
             if random < 0.5 {
                 self.left_speed = 1.5;

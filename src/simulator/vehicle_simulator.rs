@@ -260,10 +260,18 @@ impl Eater {
     fn eat(&self, arena: &mut Arena) {
         let point = Point2::new(self.x, arena.window_height - self.y);
         let arena_window_height = arena.window_height;
-        arena.feeds.retain(|feed| {
+        for feed in &mut arena.feeds {
             let ball = Ball::new(feed.radius);
             let transformed = Isometry2::new(Vector2::new(feed.x, arena_window_height - feed.y), na::zero());
-            ball.distance_to_point(&transformed, &point, false) > self.radius
+            if ball.distance_to_point(&transformed, &point, false) <= self.radius {
+                feed.life -= 1;
+            }
+        }
+        arena.feeds.retain(|feed| {
+            feed.life != 0
+            // let ball = Ball::new(feed.radius);
+            // let transformed = Isometry2::new(Vector2::new(feed.x, arena_window_height - feed.y), na::zero());
+            // ball.distance_to_point(&transformed, &point, false) > self.radius
         });
     }
     pub fn is_touched(&self, arena: &Arena) -> bool {
@@ -279,7 +287,7 @@ impl Eater {
             let o_distance = ball.distance_to_point(&transformed, &point, false);
             // println!("o distance: {}, arana_distance: {}", o_distance, distance);
             if distance > o_distance {
-                println!("o distance: {}", o_distance);
+                // println!("o distance: {}", o_distance);
                 distance = o_distance
                 // thread::sleep(time::Duration::from_millis(3000));
             }
@@ -469,11 +477,17 @@ struct Feed {
     x: f64,
     y: f64,
     radius: f64,
+    life: u32,
 }
 
 impl Feed {
     pub fn new(x: f64, y: f64, radius: f64) -> Feed {
-        Feed { x, y, radius }
+        Feed {
+            x,
+            y,
+            radius,
+            life: 200,
+        }
     }
     pub fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>) {
         let square = ellipse::circle(self.x, self.y, self.radius);
