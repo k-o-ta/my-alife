@@ -6,6 +6,7 @@ use ncollide2d::query::PointQuery;
 use ncollide2d::query::{Ray, RayCast, RayInterferencesCollector};
 use ncollide2d::shape::{Ball, Cuboid};
 use piston_window::*;
+use simulator::module::Module;
 use std::{thread, time};
 // gfx_graphics::back_end
 
@@ -28,7 +29,10 @@ impl Simulator {
             eater: eater,
         }
     }
-    pub fn run(&mut self) {
+    pub fn run<F>(&mut self, mut update: F)
+    where
+        F: FnMut(&mut Eater, &Arena),
+    {
         let mut window: PistonWindow = WindowSettings::new("Hello Piston!", self.display_size)
             .exit_on_esc(true)
             .build()
@@ -39,6 +43,7 @@ impl Simulator {
                 &e,
                 (0.0 as f64, 0.0 as f64), // unused
                 &mut self.arena,
+                &mut update,
             );
         }
     }
@@ -135,10 +140,10 @@ pub struct Eater {
     x: f64,
     y: f64,
     field_of_vision: f64,
-    left_sensor: Sensor,
-    right_sensor: Sensor,
-    left_speed: f64,
-    right_speed: f64,
+    pub left_sensor: Sensor,
+    pub right_sensor: Sensor,
+    pub left_speed: f64,
+    pub right_speed: f64,
     angle: f64,
     next_angle: f64,
     back: i32,
@@ -147,7 +152,7 @@ pub struct Eater {
 use std::f64;
 impl Eater {
     pub fn new(orig: (f64, f64), height: f64) -> Eater {
-        let radius = 30.0;
+        let radius = 15.0;
         let x = orig.0;
         let y = height - orig.1;
         let field_of_vision = 120.0_f64.to_radians();
@@ -179,9 +184,16 @@ impl Eater {
             back: 0,
         }
     }
-    pub fn render<E>(&mut self, w: &mut PistonWindow, e: &E, action: (f64, f64), arena: &mut Arena)
-    where
+    pub fn render<E, F>(
+        &mut self,
+        w: &mut PistonWindow,
+        e: &E,
+        action: (f64, f64),
+        arena: &mut Arena,
+        mut update_closure: F,
+    ) where
         E: generic_event::GenericEvent,
+        F: FnMut(&mut Eater, &Arena),
     {
         w.draw_2d(e, |c, g| {
             clear([1.0, 1.0, 1.0, 1.0], g);
@@ -235,12 +247,13 @@ impl Eater {
 
             self.draw(c, g, &arena, next_angle);
 
-            if let Some(data) = self.left_sensor.data(arena) {
-              self.left_speed = 2.0 + 2.0 * data;
-            }
-            if let Some(data) = self.right_sensor.data(arena) {
-              self.right_speed = 2.0 + 2.0 * data;
-            }
+            update_closure(self, &arena);
+            // if let Some(data) = self.left_sensor.data(arena) {
+            //   self.left_speed = 2.0 + 2.0 * data;
+            // }
+            // if let Some(data) = self.right_sensor.data(arena) {
+            //   self.right_speed = 2.0 + 2.0 * data;
+            // }
             self.update(trans_x, trans_y, next_angle);
         });
     }
@@ -309,7 +322,7 @@ impl Eater {
         self.right_sensor.update((self.x, self.y), self.angle);
     }
 }
-struct Sensor {
+pub struct Sensor {
     x: f64,
     y: f64,
     field_of_vision: f64,
