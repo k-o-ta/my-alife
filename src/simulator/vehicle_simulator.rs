@@ -93,7 +93,7 @@ impl Arena {
         ];
         let feeds = vec![
             Feed::new(100.0, 100.0, 3.0),
-            Feed::new(120.0, 300.0, 3.0),
+            // Feed::new(120.0, 300.0, 3.0),
             Feed::new(200.0, 100.0, 3.0),
             Feed::new(200.0, 200.0, 3.0),
             Feed::new(300.0, 300.0, 3.0),
@@ -147,6 +147,7 @@ pub struct Eater {
     angle: f64,
     next_angle: f64,
     back: i32,
+    eating: bool,
 }
 
 use std::f64;
@@ -182,6 +183,7 @@ impl Eater {
             angle: 0.0,
             next_angle: 0.0,
             back: 0,
+            eating: false,
         }
     }
     pub fn render<E, F>(
@@ -257,7 +259,8 @@ impl Eater {
             self.update(trans_x, trans_y, next_angle);
         });
     }
-    fn eat(&self, arena: &mut Arena) {
+    fn eat(&mut self, arena: &mut Arena) {
+        let mut eating = false;
         let point = Point2::new(self.x, arena.window_height - self.y);
         let arena_window_height = arena.window_height;
         for feed in &mut arena.feeds {
@@ -265,14 +268,28 @@ impl Eater {
             let transformed = Isometry2::new(Vector2::new(feed.x, arena_window_height - feed.y), na::zero());
             if ball.distance_to_point(&transformed, &point, false) <= self.radius {
                 feed.life -= 1;
+                eating = true;
             }
         }
+        self.eating = eating;
         arena.feeds.retain(|feed| {
             feed.life != 0
             // let ball = Ball::new(feed.radius);
             // let transformed = Isometry2::new(Vector2::new(feed.x, arena_window_height - feed.y), na::zero());
             // ball.distance_to_point(&transformed, &point, false) > self.radius
         });
+    }
+    pub fn sensor_data(&self, arena: &Arena) -> ((f64, f64), bool) {
+        (
+            (
+                self.left_sensor.data(arena).unwrap_or(0.0),
+                self.right_sensor.data(arena).unwrap_or(0.0),
+            ),
+            self.is_eating(),
+        )
+    }
+    fn is_eating(&self) -> bool {
+        self.eating
     }
     pub fn is_touched(&self, arena: &Arena) -> bool {
         let point = Point2::new(self.x, self.y);
@@ -482,12 +499,7 @@ struct Feed {
 
 impl Feed {
     pub fn new(x: f64, y: f64, radius: f64) -> Feed {
-        Feed {
-            x,
-            y,
-            radius,
-            life: 200,
-        }
+        Feed { x, y, radius, life: 50 }
     }
     pub fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>) {
         let square = ellipse::circle(self.x, self.y, self.radius);

@@ -1,6 +1,6 @@
 use rand::{thread_rng, Rng};
 pub trait Module {
-    fn set_input(&mut self, distance: (f64, f64));
+    fn set_input(&mut self, sensor_data: ((f64, f64), bool));
     fn update(&mut self);
     fn get_wheelspeed(&self) -> (f64, f64);
 }
@@ -13,11 +13,11 @@ pub struct AvoidModule {
 }
 
 impl Module for AvoidModule {
-    fn set_input(&mut self, distance: (f64, f64)) {
+    fn set_input(&mut self, sensor_data: ((f64, f64), bool)) {
+        let distance = sensor_data.0;
         self.left_distance = distance.0;
         self.righ_distance = distance.1;
     }
-
     fn update(&mut self) {
         self.left_speed = 2.0 + 2.0 * self.left_distance;
         self.right_speed = 2.0 + 2.0 * self.righ_distance;
@@ -48,9 +48,11 @@ pub struct WanderModule {
 }
 
 impl Module for WanderModule {
-    fn set_input(&mut self, distance: (f64, f64)) {
+    fn set_input(&mut self, sensor_data: ((f64, f64), bool)) {
+        let distance = sensor_data.0;
         self.left_distance = distance.0;
         self.righ_distance = distance.1;
+        self.child_module.set_input(sensor_data);
     }
     fn update(&mut self) {
         if self.left_distance < 0.001 && self.righ_distance < 0.001 {
@@ -60,7 +62,6 @@ impl Module for WanderModule {
         }
 
         if self.counter < Self::TURN_START_STEP {
-            self.child_module.set_input((self.left_distance, self.righ_distance));
             self.child_module.update();
             self.left_speed = self.child_module.get_wheelspeed().0;
             self.right_speed = self.child_module.get_wheelspeed().1;
@@ -97,6 +98,52 @@ impl WanderModule {
             right_speed,
             counter: 0,
             child_module: avoid_module,
+        }
+    }
+}
+
+pub struct ExploreModule {
+    left_distance: f64,
+    right_distance: f64,
+    left_speed: f64,
+    right_speed: f64,
+    touching: bool,
+    child_module: WanderModule,
+}
+
+impl Module for ExploreModule {
+    fn set_input(&mut self, sensor_data: ((f64, f64), bool)) {
+        let distance = sensor_data.0;
+        let is_touching = sensor_data.1;
+        self.left_distance = distance.0;
+        self.right_distance = distance.1;
+        self.touching = is_touching;
+    }
+    fn update(&mut self) {
+        if self.touching {
+            self.right_speed = 0.0;
+            self.left_speed = 0.0;
+        } else {
+            self.child_module.update();
+
+            self.right_speed = self.child_module.get_wheelspeed().0;
+            self.left_speed = self.child_module.get_wheelspeed().1;
+        }
+    }
+    fn get_wheelspeed(&self) -> (f64, f64) {
+        (self.left_speed, self.right_speed)
+    }
+}
+
+impl ExploreModule {
+    pub fn new() -> ExploreModule {
+        ExploreModule {
+            left_distance: 0.0,
+            right_distance: 0.0,
+            left_speed: 0.0,
+            right_speed: 0.0,
+            touching: false,
+            child_module: WanderModule::new(),
         }
     }
 }
