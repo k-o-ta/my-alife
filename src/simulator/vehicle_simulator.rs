@@ -201,7 +201,8 @@ impl Eater {
             clear([1.0, 1.0, 1.0, 1.0], g);
 
             let action = (self.left_speed , self.right_speed );
-            let t = 1.0;
+            // let t = 1.0;
+            let t = 0.5;
 
             self.eat(arena);
             // if self.back > 0 && !self.is_touched(&arena){
