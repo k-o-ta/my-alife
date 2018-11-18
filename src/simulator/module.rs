@@ -65,6 +65,7 @@ impl Module for WanderModule {
             self.child_module.update();
             self.left_speed = self.child_module.get_wheelspeed().0;
             self.right_speed = self.child_module.get_wheelspeed().1;
+        // println!("avoiding, left: {}, right: {}", self.left_speed, self.right_speed);
         } else if self.counter == Self::TURN_START_STEP {
             println!("into wander");
             let random: f64 = thread_rng().gen();
@@ -113,6 +114,7 @@ pub struct ExploreModule {
 
 impl Module for ExploreModule {
     fn set_input(&mut self, sensor_data: ((f64, f64), bool)) {
+        self.child_module.set_input(sensor_data);
         let distance = sensor_data.0;
         let is_touching = sensor_data.1;
         self.left_distance = distance.0;
@@ -126,8 +128,8 @@ impl Module for ExploreModule {
         } else {
             self.child_module.update();
 
-            self.right_speed = self.child_module.get_wheelspeed().0;
-            self.left_speed = self.child_module.get_wheelspeed().1;
+            self.left_speed = self.child_module.get_wheelspeed().0;
+            self.right_speed = self.child_module.get_wheelspeed().1;
         }
     }
     fn get_wheelspeed(&self) -> (f64, f64) {
