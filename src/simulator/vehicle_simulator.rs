@@ -93,11 +93,37 @@ impl Arena {
         ];
         let feeds = vec![
             Feed::new(100.0, 100.0, 3.0),
-            Feed::new(120.0, 300.0, 3.0),
+            Feed::new(110.0, 400.0, 3.0),
+            Feed::new(120.0, 150.0, 3.0),
+            Feed::new(130.0, 300.0, 3.0),
+            Feed::new(140.0, 170.0, 3.0),
+            Feed::new(150.0, 270.0, 3.0),
+            Feed::new(160.0, 275.0, 3.0),
+            Feed::new(170.0, 300.0, 3.0),
+            Feed::new(180.0, 305.0, 3.0),
+            Feed::new(190.0, 192.0, 3.0),
             Feed::new(200.0, 100.0, 3.0),
             Feed::new(200.0, 200.0, 3.0),
-            Feed::new(300.0, 300.0, 3.0),
+            Feed::new(210.0, 200.0, 3.0),
+            Feed::new(225.0, 109.0, 3.0),
+            Feed::new(235.0, 120.0, 3.0),
+            Feed::new(250.0, 450.0, 3.0),
+            Feed::new(275.0, 312.0, 3.0),
+            Feed::new(290.0, 290.0, 3.0),
+            Feed::new(300.0, 140.0, 3.0),
             Feed::new(315.0, 150.0, 3.0),
+            Feed::new(325.0, 288.0, 3.0),
+            Feed::new(335.0, 192.0, 3.0),
+            Feed::new(345.0, 105.0, 3.0),
+            Feed::new(350.0, 222.0, 3.0),
+            Feed::new(365.0, 333.0, 3.0),
+            Feed::new(385.0, 111.0, 3.0),
+            Feed::new(395.0, 59.0, 3.0),
+            Feed::new(400.0, 444.0, 3.0),
+            Feed::new(405.0, 256.0, 3.0),
+            Feed::new(415.0, 321.0, 3.0),
+            Feed::new(425.0, 123.0, 3.0),
+            Feed::new(435.0, 190.0, 3.0),
             Feed::new(450.0, 400.0, 3.0),
             Feed::new(470.0, 80.0, 3.0),
         ];
@@ -203,8 +229,7 @@ impl Eater {
             clear([1.0, 1.0, 1.0, 1.0], g);
 
             let action = (self.left_speed , self.right_speed );
-            // let t = 1.0;
-            let t = 0.5;
+            let t = 1.0;
 
             self.eat(arena);
             // if self.back > 0 && !self.is_touched(&arena){

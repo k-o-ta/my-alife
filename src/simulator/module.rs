@@ -21,8 +21,8 @@ impl Module for AvoidModule {
         self.righ_distance = distance.1;
     }
     fn update(&mut self) {
-        self.left_speed = 2.0 + 2.0 * self.left_distance;
-        self.right_speed = 2.0 + 2.0 * self.righ_distance;
+        self.left_speed = 1.0 + 3.0 * self.left_distance;
+        self.right_speed = 1.0 + 3.0 * self.righ_distance;
     }
     fn get_wheelspeed(&self) -> (f64, f64) {
         (self.left_speed, self.right_speed)
@@ -96,8 +96,8 @@ impl Module for WanderModule {
 }
 
 impl WanderModule {
-    const TURN_START_STEP: u32 = 50;
-    const TURN_END_STEP: u32 = 90;
+    const TURN_START_STEP: u32 = 20;
+    const TURN_END_STEP: u32 = 40;
     pub fn new() -> WanderModule {
         let left_distance = 0.0;
         let righ_distance = 0.0;
