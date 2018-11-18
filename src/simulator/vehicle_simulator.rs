@@ -103,7 +103,7 @@ impl Arena {
     }
 
     pub fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>) {
-        let blue = [0.0, 0.0, 1.0, 1.0];
+        let blue = [230.0 / 250.0, 230.0 / 250.0, 250.0 / 250.0, 1.0];
         Rectangle::new_border(blue, 1.5).draw(
             [self.nw.0, self.nw.1, self.width, self.height], // (x, y, width, height)
             &c.draw_state,
@@ -422,7 +422,7 @@ impl Obstacle {
     }
     pub fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>) {
         let square = ellipse::circle(self.x, self.y, self.radius);
-        let blue = [0.0, 0.0, 1.0, 1.0];
+        let blue = [230.0 / 250.0, 230.0 / 250.0, 250.0 / 250.0, 1.0];
         ellipse(blue, square, c.transform, g);
     }
 }
