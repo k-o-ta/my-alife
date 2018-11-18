@@ -31,5 +31,6 @@ fn simulation(size: (u32, u32)) {
         module.update();
         eater_self.left_speed = module.get_wheelspeed().0;
         eater_self.right_speed = module.get_wheelspeed().1;
+        eater_self.update_color(module.get_color());
     });
 }

@@ -148,6 +148,7 @@ pub struct Eater {
     next_angle: f64,
     back: i32,
     eating: bool,
+    color: [f32; 4],
 }
 
 use std::f64;
@@ -184,6 +185,7 @@ impl Eater {
             next_angle: 0.0,
             back: 0,
             eating: false,
+            color: [144.0 / 255.0, 238.0 / 255.0, 144.0 / 255.0, 1.0],
         }
     }
     pub fn render<E, F>(
@@ -325,21 +327,32 @@ impl Eater {
         self.left_sensor.draw(c, g, next_angle);
         self.right_sensor.draw(c, g, next_angle);
         let square = ellipse::circle(self.x, self.y, self.radius);
+        // let mut color = if self.is_collide(arena) {
+        //     [1.0, 1.0, 0.0, 1.0] // yellow
+        // } else {
+        //     [0.0, 1.0, 0.0, 1.0] // green
+        // };
+        // if self.is_touched(arena) {
+        //     color = [1.0, 0.0, 0.0, 1.0] //red
+        // };
         let mut color = if self.is_collide(arena) {
-            [1.0, 1.0, 0.0, 1.0] // yellow
+            Some([1.0, 0.0, 0.0, 1.0]) // yellow
         } else {
-            [0.0, 1.0, 0.0, 1.0] // green
+            None
         };
         if self.is_touched(arena) {
-            color = [1.0, 0.0, 0.0, 1.0] //red
+            color = Some([1.0, 0.0, 0.0, 0.5]) //red
         };
-        ellipse(color, square, c.transform, g);
+        ellipse(self.color, square, c.transform, g);
 
         let center_line_color = [0.5, 0.5, 0.5, 1.0];
         let zero_center = [0.0, 0.0, self.radius, 0.0];
         // 初期値じゃなくてtransで移さないとrotateの原点が移らない?
         let transed = c.transform.trans(self.x, self.y);
         line(center_line_color, 1.0, zero_center, transed.rot_deg(-next_angle), g);
+    }
+    pub fn update_color(&mut self, color: [f32; 4]) {
+        self.color = color;
     }
     pub fn update(&mut self, trans_x: f64, trans_y: f64, next_angle: f64) {
         self.x = self.x + trans_x;

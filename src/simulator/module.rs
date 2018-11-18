@@ -3,6 +3,7 @@ pub trait Module {
     fn set_input(&mut self, sensor_data: ((f64, f64), bool));
     fn update(&mut self);
     fn get_wheelspeed(&self) -> (f64, f64);
+    fn get_color(&self) -> [f32; 4];
 }
 
 pub struct AvoidModule {
@@ -10,6 +11,7 @@ pub struct AvoidModule {
     righ_distance: f64,
     left_speed: f64,
     right_speed: f64,
+    color: [f32; 4],
 }
 
 impl Module for AvoidModule {
@@ -25,6 +27,9 @@ impl Module for AvoidModule {
     fn get_wheelspeed(&self) -> (f64, f64) {
         (self.left_speed, self.right_speed)
     }
+    fn get_color(&self) -> [f32; 4] {
+        self.color
+    }
 }
 
 impl AvoidModule {
@@ -34,6 +39,7 @@ impl AvoidModule {
             righ_distance: 0.0,
             left_speed: 0.0,
             right_speed: 0.0,
+            color: [1.0, 0.0, 0.0, 1.0],
         }
     }
 }
@@ -43,6 +49,7 @@ pub struct WanderModule {
     righ_distance: f64,
     left_speed: f64,
     right_speed: f64,
+    color: [f32; 4],
     counter: u32,
     child_module: AvoidModule,
 }
@@ -65,6 +72,7 @@ impl Module for WanderModule {
             self.child_module.update();
             self.left_speed = self.child_module.get_wheelspeed().0;
             self.right_speed = self.child_module.get_wheelspeed().1;
+            self.color = self.child_module.get_color();
         // println!("avoiding, left: {}, right: {}", self.left_speed, self.right_speed);
         } else if self.counter == Self::TURN_START_STEP {
             println!("into wander");
@@ -76,16 +84,20 @@ impl Module for WanderModule {
                 self.left_speed = 1.0;
                 self.right_speed = 1.5;
             }
+            self.color = [0.0, 1.0, 0.0, 1.0];
         }
     }
     fn get_wheelspeed(&self) -> (f64, f64) {
         (self.left_speed, self.right_speed)
     }
+    fn get_color(&self) -> [f32; 4] {
+        self.color
+    }
 }
 
 impl WanderModule {
-    const TURN_START_STEP: u32 = 100;
-    const TURN_END_STEP: u32 = 180;
+    const TURN_START_STEP: u32 = 50;
+    const TURN_END_STEP: u32 = 90;
     pub fn new() -> WanderModule {
         let left_distance = 0.0;
         let righ_distance = 0.0;
@@ -97,6 +109,7 @@ impl WanderModule {
             righ_distance,
             left_speed,
             right_speed,
+            color: [0.0, 1.0, 0.0, 1.0],
             counter: 0,
             child_module: avoid_module,
         }
@@ -108,6 +121,7 @@ pub struct ExploreModule {
     right_distance: f64,
     left_speed: f64,
     right_speed: f64,
+    color: [f32; 4],
     touching: bool,
     child_module: WanderModule,
 }
@@ -125,15 +139,20 @@ impl Module for ExploreModule {
         if self.touching {
             self.right_speed = 0.0;
             self.left_speed = 0.0;
+            self.color = [0.0, 0.0, 1.0, 1.0];
         } else {
             self.child_module.update();
 
             self.left_speed = self.child_module.get_wheelspeed().0;
             self.right_speed = self.child_module.get_wheelspeed().1;
+            self.color = self.child_module.get_color();
         }
     }
     fn get_wheelspeed(&self) -> (f64, f64) {
         (self.left_speed, self.right_speed)
+    }
+    fn get_color(&self) -> [f32; 4] {
+        self.color
     }
 }
 
@@ -144,6 +163,7 @@ impl ExploreModule {
             right_distance: 0.0,
             left_speed: 0.0,
             right_speed: 0.0,
+            color: [0.0, 0.0, 1.0, 1.0],
             touching: false,
             child_module: WanderModule::new(),
         }
