@@ -38,7 +38,7 @@ impl Simulator {
                 &mut window,
                 &e,
                 (0.0 as f64, 0.0 as f64), // unused
-                &self.arena,
+                &mut self.arena,
             );
         }
     }
@@ -52,6 +52,7 @@ pub struct Arena {
     pub cuboid: Cuboid<f64>,
     pub transformed: Isometry2<f64>,
     obstacles: Vec<Obstacle>,
+    feeds: Vec<Feed>,
 }
 impl Arena {
     pub fn new(window_x: f64, window_y: f64) -> Arena {
@@ -85,6 +86,16 @@ impl Arena {
             Obstacle::new(375.0, 400.0, 30.0),
             Obstacle::new(225.0, 400.0, 30.0),
         ];
+        let feeds = vec![
+            Feed::new(100.0, 100.0, 3.0),
+            Feed::new(120.0, 300.0, 3.0),
+            Feed::new(200.0, 100.0, 3.0),
+            Feed::new(200.0, 200.0, 3.0),
+            Feed::new(300.0, 300.0, 3.0),
+            Feed::new(315.0, 150.0, 3.0),
+            Feed::new(450.0, 400.0, 3.0),
+            Feed::new(470.0, 80.0, 3.0),
+        ];
 
         Arena {
             nw: (x_diff, y_diff),
@@ -99,6 +110,7 @@ impl Arena {
             window_height: window_y,
             transformed: transformed,
             obstacles: obstacles,
+            feeds: feeds,
         }
     }
 
@@ -112,6 +124,9 @@ impl Arena {
         );
         for o in &self.obstacles {
             o.draw(c, g);
+        }
+        for f in &self.feeds {
+            f.draw(c, g);
         }
     }
 }
@@ -164,7 +179,7 @@ impl Eater {
             back: 0,
         }
     }
-    pub fn render<E>(&mut self, w: &mut PistonWindow, e: &E, action: (f64, f64), arena: &Arena)
+    pub fn render<E>(&mut self, w: &mut PistonWindow, e: &E, action: (f64, f64), arena: &mut Arena)
     where
         E: generic_event::GenericEvent,
     {
@@ -174,6 +189,7 @@ impl Eater {
             let action = (self.left_speed , self.right_speed );
             let t = 1.0;
 
+            self.eat(arena);
             if self.back > 0 {
               let action = (-self.left_speed , -self.right_speed );
               let v = (action.0 + action.1) / 2.0;
@@ -226,6 +242,15 @@ impl Eater {
               self.right_speed = 2.0 + 2.0 * data;
             }
             self.update(trans_x, trans_y, next_angle);
+        });
+    }
+    fn eat(&self, arena: &mut Arena) {
+        let point = Point2::new(self.x, arena.window_height - self.y);
+        let arena_window_height = arena.window_height;
+        arena.feeds.retain(|feed| {
+            let ball = Ball::new(feed.radius);
+            let transformed = Isometry2::new(Vector2::new(feed.x, arena_window_height - feed.y), na::zero());
+            ball.distance_to_point(&transformed, &point, false) > self.radius
         });
     }
     pub fn is_touched(&self, arena: &Arena) -> bool {
@@ -427,7 +452,22 @@ impl Obstacle {
     }
 }
 
-struct Feed {}
+struct Feed {
+    x: f64,
+    y: f64,
+    radius: f64,
+}
+
+impl Feed {
+    pub fn new(x: f64, y: f64, radius: f64) -> Feed {
+        Feed { x, y, radius }
+    }
+    pub fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>) {
+        let square = ellipse::circle(self.x, self.y, self.radius);
+        let black = [0.0, 0.0, 0.0, 1.0];
+        ellipse(black, square, c.transform, g);
+    }
+}
 
 fn delta_angle(delta_left: f64, delta_right: f64, radius: f64) -> f64 {
     90.0 * (delta_right - delta_left) / (radius * 3.14)
