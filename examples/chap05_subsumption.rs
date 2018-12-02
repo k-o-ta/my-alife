@@ -6,12 +6,6 @@ extern crate rand;
 
 use my_alife::simulator::module::{AvoidModule, ExploreModule, Module, WanderModule};
 use my_alife::simulator::vehicle_simulator::*;
-use na::{Isometry2, Point2, Vector2};
-use ncollide2d::query::{Ray, RayCast, RayInterferencesCollector};
-use ncollide2d::shape::{Ball, Cuboid};
-use piston_window::*;
-use rand::{thread_rng, Rng};
-use std::sync::Arc;
 
 fn main() {
     let size = (600, 480);
@@ -19,14 +13,10 @@ fn main() {
 }
 
 fn simulation(size: (u32, u32)) {
-    let mut module = AvoidModule::new();
-    let mut module = WanderModule::new();
+    let mut _module = AvoidModule::new();
+    let mut _module = WanderModule::new();
     let mut module = ExploreModule::new();
     Simulator::new(size).run(|eater_self, ref arena| {
-        // module.set_input((
-        //     eater_self.left_sensor.data(arena).unwrap_or(0.0),
-        //     eater_self.right_sensor.data(arena).unwrap_or(0.0),
-        // ));
         module.set_input(eater_self.sensor_data(arena));
         module.update();
         eater_self.left_speed = module.get_wheelspeed().0;

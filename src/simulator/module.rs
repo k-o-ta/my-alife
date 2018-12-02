@@ -1,9 +1,10 @@
 use rand::{thread_rng, Rng};
+use simulator::vehicle_simulator::Color;
 pub trait Module {
     fn set_input(&mut self, sensor_data: ((f64, f64), bool));
     fn update(&mut self);
     fn get_wheelspeed(&self) -> (f64, f64);
-    fn get_color(&self) -> [f32; 4];
+    fn get_color(&self) -> Color;
 }
 
 pub struct AvoidModule {
@@ -11,7 +12,7 @@ pub struct AvoidModule {
     righ_distance: f64,
     left_speed: f64,
     right_speed: f64,
-    color: [f32; 4],
+    color: Color,
 }
 
 impl Module for AvoidModule {
@@ -27,7 +28,7 @@ impl Module for AvoidModule {
     fn get_wheelspeed(&self) -> (f64, f64) {
         (self.left_speed, self.right_speed)
     }
-    fn get_color(&self) -> [f32; 4] {
+    fn get_color(&self) -> Color {
         self.color
     }
 }
@@ -39,7 +40,7 @@ impl AvoidModule {
             righ_distance: 0.0,
             left_speed: 0.0,
             right_speed: 0.0,
-            color: [1.0, 0.0, 0.0, 1.0],
+            color: Color::Red,
         }
     }
 }
@@ -49,7 +50,7 @@ pub struct WanderModule {
     righ_distance: f64,
     left_speed: f64,
     right_speed: f64,
-    color: [f32; 4],
+    color: Color,
     counter: u32,
     child_module: AvoidModule,
 }
@@ -84,13 +85,13 @@ impl Module for WanderModule {
                 self.left_speed = 1.0;
                 self.right_speed = 1.5;
             }
-            self.color = [0.0, 1.0, 0.0, 1.0];
+            self.color = Color::Green;
         }
     }
     fn get_wheelspeed(&self) -> (f64, f64) {
         (self.left_speed, self.right_speed)
     }
-    fn get_color(&self) -> [f32; 4] {
+    fn get_color(&self) -> Color {
         self.color
     }
 }
@@ -109,7 +110,7 @@ impl WanderModule {
             righ_distance,
             left_speed,
             right_speed,
-            color: [0.0, 1.0, 0.0, 1.0],
+            color: Color::Green,
             counter: 0,
             child_module: avoid_module,
         }
@@ -121,7 +122,7 @@ pub struct ExploreModule {
     right_distance: f64,
     left_speed: f64,
     right_speed: f64,
-    color: [f32; 4],
+    color: Color,
     touching: bool,
     child_module: WanderModule,
 }
@@ -139,7 +140,7 @@ impl Module for ExploreModule {
         if self.touching {
             self.right_speed = 0.0;
             self.left_speed = 0.0;
-            self.color = [0.0, 0.0, 1.0, 1.0];
+            self.color = Color::Blue;
         } else {
             self.child_module.update();
 
@@ -151,7 +152,7 @@ impl Module for ExploreModule {
     fn get_wheelspeed(&self) -> (f64, f64) {
         (self.left_speed, self.right_speed)
     }
-    fn get_color(&self) -> [f32; 4] {
+    fn get_color(&self) -> Color {
         self.color
     }
 }
@@ -163,7 +164,7 @@ impl ExploreModule {
             right_distance: 0.0,
             left_speed: 0.0,
             right_speed: 0.0,
-            color: [0.0, 0.0, 1.0, 1.0],
+            color: Color::Blue,
             touching: false,
             child_module: WanderModule::new(),
         }

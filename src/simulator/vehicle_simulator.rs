@@ -3,19 +3,22 @@ use gfx_graphics::GfxGraphics;
 use na;
 use na::{Isometry2, Point2, Vector2};
 use ncollide2d::query::PointQuery;
-use ncollide2d::query::{Ray, RayCast, RayInterferencesCollector};
+use ncollide2d::query::{Ray, RayCast};
 use ncollide2d::shape::{Ball, Cuboid};
 use piston_window::*;
-use simulator::module::Module;
-use std::{thread, time};
-// gfx_graphics::back_end
 
+/// 車の動きを再現するsimulator
 pub struct Simulator {
     display_size: (u32, u32),
     arena: Arena,
     eater: Eater,
 }
+
 impl Simulator {
+    /// Simulatorインスタンスを生成する
+    ///
+    /// # Arguments
+    /// * `display_size` - ウィンドウのサイズ
     pub fn new(display_size: (u32, u32)) -> Simulator {
         let arena = Arena::new(display_size.0 as f64, display_size.1 as f64);
         let orig_x = arena.nw.0 + 50.0;
@@ -38,13 +41,7 @@ impl Simulator {
             .build()
             .unwrap_or_else(|e| panic!("Failed to build PistonWindow: {}", e));
         while let Some(e) = window.next() {
-            self.eater.render(
-                &mut window,
-                &e,
-                (0.0 as f64, 0.0 as f64), // unused
-                &mut self.arena,
-                &mut update,
-            );
+            self.eater.render(&mut window, &e, &mut self.arena, &mut update);
         }
     }
 }
@@ -146,7 +143,7 @@ impl Arena {
     }
 
     pub fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>) {
-        let blue = [230.0 / 250.0, 230.0 / 250.0, 250.0 / 250.0, 1.0];
+        let blue = Color::Blue2.to_rgb();
         Rectangle::new_border(blue, 1.5).draw(
             [self.nw.0, self.nw.1, self.width, self.height], // (x, y, width, height)
             &c.draw_state,
@@ -165,16 +162,14 @@ pub struct Eater {
     radius: f64,
     x: f64,
     y: f64,
-    field_of_vision: f64,
     pub left_sensor: Sensor,
     pub right_sensor: Sensor,
     pub left_speed: f64,
     pub right_speed: f64,
     angle: f64,
-    next_angle: f64,
     back: i32,
     eating: bool,
-    color: [f32; 4],
+    color: Color,
 }
 
 use std::f64;
@@ -186,14 +181,12 @@ impl Eater {
         let field_of_vision = 120.0_f64.to_radians();
         Eater {
             radius: radius,
-            field_of_vision: field_of_vision,
             x: x,
             y: y,
             left_speed: 2.0,
             left_sensor: Sensor::new(
                 (x, y),
                 field_of_vision / 2.0,
-                (x + (field_of_vision / 2.0).cos(), y + (field_of_vision / 2.0).sin()),
                 [0.5, 0.5, 0.5, 1.0],
                 radius * 4.0,
                 radius,
@@ -201,27 +194,19 @@ impl Eater {
             right_sensor: Sensor::new(
                 (x, y),
                 -field_of_vision / 2.0,
-                (x + (-field_of_vision / 2.0).cos(), y + (-field_of_vision / 2.0).sin()),
                 [0.5, 0.5, 0.5, 1.0],
                 radius * 4.0,
                 radius,
             ),
             right_speed: 1.0,
             angle: 0.0,
-            next_angle: 0.0,
             back: 0,
             eating: false,
-            color: [144.0 / 255.0, 238.0 / 255.0, 144.0 / 255.0, 1.0],
+            color: Color::LightGreen,
         }
     }
-    pub fn render<E, F>(
-        &mut self,
-        w: &mut PistonWindow,
-        e: &E,
-        action: (f64, f64),
-        arena: &mut Arena,
-        mut update_closure: F,
-    ) where
+    pub fn render<E, F>(&mut self, w: &mut PistonWindow, e: &E, arena: &mut Arena, mut update_closure: F)
+    where
         E: generic_event::GenericEvent,
         F: FnMut(&mut Eater, &Arena),
     {
@@ -352,31 +337,15 @@ impl Eater {
         self.left_sensor.draw(c, g, next_angle);
         self.right_sensor.draw(c, g, next_angle);
         let square = ellipse::circle(self.x, self.y, self.radius);
-        // let mut color = if self.is_collide(arena) {
-        //     [1.0, 1.0, 0.0, 1.0] // yellow
-        // } else {
-        //     [0.0, 1.0, 0.0, 1.0] // green
-        // };
-        // if self.is_touched(arena) {
-        //     color = [1.0, 0.0, 0.0, 1.0] //red
-        // };
-        let mut color = if self.is_collide(arena) {
-            Some([1.0, 0.0, 0.0, 1.0]) // yellow
-        } else {
-            None
-        };
-        if self.is_touched(arena) {
-            color = Some([1.0, 0.0, 0.0, 0.5]) //red
-        };
-        ellipse(self.color, square, c.transform, g);
+        ellipse(self.color.to_rgb(), square, c.transform, g);
 
-        let center_line_color = [0.5, 0.5, 0.5, 1.0];
+        let center_line_color = Color::Gray.to_rgb();
         let zero_center = [0.0, 0.0, self.radius, 0.0];
         // 初期値じゃなくてtransで移さないとrotateの原点が移らない?
         let transed = c.transform.trans(self.x, self.y);
         line(center_line_color, 1.0, zero_center, transed.rot_deg(-next_angle), g);
     }
-    pub fn update_color(&mut self, color: [f32; 4]) {
+    pub fn update_color(&mut self, color: Color) {
         self.color = color;
     }
     pub fn update(&mut self, trans_x: f64, trans_y: f64, next_angle: f64) {
@@ -391,30 +360,18 @@ pub struct Sensor {
     x: f64,
     y: f64,
     field_of_vision: f64,
-    dir: (f64, f64),
     angle: f64,
-    ray: Ray<f64>,
     color: [f32; 4],
     length: f64,
     radius: f64,
 }
 impl Sensor {
-    pub fn new(
-        orig: (f64, f64),
-        field_of_vision: f64,
-        dir: (f64, f64),
-        color: [f32; 4],
-        length: f64,
-        radius: f64,
-    ) -> Sensor {
-        let ray = Ray::new(Point2::new(orig.0, orig.1), Vector2::new(dir.0, dir.1));
+    pub fn new(orig: (f64, f64), field_of_vision: f64, color: [f32; 4], length: f64, radius: f64) -> Sensor {
         Sensor {
             x: orig.0,
             y: orig.1,
             field_of_vision: field_of_vision,
-            dir: dir,
             angle: 0.0,
-            ray,
             color,
             length,
             radius,
@@ -550,4 +507,27 @@ impl Feed {
 
 fn delta_angle(delta_left: f64, delta_right: f64, radius: f64) -> f64 {
     90.0 * (delta_right - delta_left) / (radius * 3.14)
+}
+
+#[derive(Copy, Clone)]
+pub enum Color {
+    Red,
+    Green,
+    Blue,
+    Blue2,
+    LightGreen,
+    Gray,
+}
+
+impl Color {
+    pub fn to_rgb(&self) -> [f32; 4] {
+        match *self {
+            Color::Red => [1.0, 0.0, 0.0, 1.0],
+            Color::Green => [0.0, 1.0, 0.0, 1.0],
+            Color::Blue => [0.0, 0.0, 1.0, 1.0],
+            Color::Blue2 => [230.0 / 250.0, 230.0 / 250.0, 250.0 / 250.0, 1.0],
+            Color::LightGreen => [144.0 / 255.0, 238.0 / 255.0, 144.0 / 255.0, 1.0],
+            Color::Gray => [0.5, 0.5, 0.5, 1.0],
+        }
+    }
 }
