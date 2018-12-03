@@ -84,40 +84,40 @@ impl Arena {
             Obstacle::new(225.0, 380.0, 30.0),
         ];
         let feeds = vec![
-            Feed::new(100.0, 100.0, 3.0),
-            Feed::new(110.0, 400.0, 3.0),
-            Feed::new(120.0, 150.0, 3.0),
-            Feed::new(130.0, 300.0, 3.0),
-            Feed::new(140.0, 170.0, 3.0),
-            Feed::new(150.0, 270.0, 3.0),
-            Feed::new(160.0, 275.0, 3.0),
-            Feed::new(170.0, 300.0, 3.0),
-            Feed::new(180.0, 305.0, 3.0),
-            Feed::new(190.0, 192.0, 3.0),
-            Feed::new(200.0, 100.0, 3.0),
-            Feed::new(200.0, 200.0, 3.0),
-            Feed::new(210.0, 200.0, 3.0),
-            Feed::new(225.0, 109.0, 3.0),
-            Feed::new(235.0, 120.0, 3.0),
-            Feed::new(250.0, 450.0, 3.0),
-            Feed::new(275.0, 312.0, 3.0),
-            Feed::new(290.0, 290.0, 3.0),
-            Feed::new(300.0, 140.0, 3.0),
-            Feed::new(315.0, 150.0, 3.0),
-            Feed::new(325.0, 288.0, 3.0),
-            Feed::new(335.0, 192.0, 3.0),
-            Feed::new(345.0, 105.0, 3.0),
-            Feed::new(350.0, 222.0, 3.0),
-            Feed::new(365.0, 333.0, 3.0),
-            Feed::new(385.0, 111.0, 3.0),
-            Feed::new(395.0, 59.0, 3.0),
-            Feed::new(400.0, 444.0, 3.0),
-            Feed::new(405.0, 256.0, 3.0),
-            Feed::new(415.0, 321.0, 3.0),
-            Feed::new(425.0, 123.0, 3.0),
-            Feed::new(435.0, 190.0, 3.0),
-            Feed::new(450.0, 400.0, 3.0),
-            Feed::new(470.0, 80.0, 3.0),
+            Feed::new(100.0, 100.0, 3.0, window_y),
+            Feed::new(110.0, 400.0, 3.0, window_y),
+            Feed::new(120.0, 150.0, 3.0, window_y),
+            Feed::new(130.0, 300.0, 3.0, window_y),
+            Feed::new(140.0, 170.0, 3.0, window_y),
+            Feed::new(150.0, 270.0, 3.0, window_y),
+            Feed::new(160.0, 275.0, 3.0, window_y),
+            Feed::new(170.0, 300.0, 3.0, window_y),
+            Feed::new(180.0, 305.0, 3.0, window_y),
+            Feed::new(190.0, 192.0, 3.0, window_y),
+            Feed::new(200.0, 100.0, 3.0, window_y),
+            Feed::new(200.0, 200.0, 3.0, window_y),
+            Feed::new(210.0, 200.0, 3.0, window_y),
+            Feed::new(225.0, 109.0, 3.0, window_y),
+            Feed::new(235.0, 120.0, 3.0, window_y),
+            Feed::new(250.0, 450.0, 3.0, window_y),
+            Feed::new(275.0, 312.0, 3.0, window_y),
+            Feed::new(290.0, 290.0, 3.0, window_y),
+            Feed::new(300.0, 140.0, 3.0, window_y),
+            Feed::new(315.0, 150.0, 3.0, window_y),
+            Feed::new(325.0, 288.0, 3.0, window_y),
+            Feed::new(335.0, 192.0, 3.0, window_y),
+            Feed::new(345.0, 105.0, 3.0, window_y),
+            Feed::new(350.0, 222.0, 3.0, window_y),
+            Feed::new(365.0, 333.0, 3.0, window_y),
+            Feed::new(385.0, 111.0, 3.0, window_y),
+            Feed::new(395.0, 59.0, 3.0, window_y),
+            Feed::new(400.0, 444.0, 3.0, window_y),
+            Feed::new(405.0, 256.0, 3.0, window_y),
+            Feed::new(415.0, 321.0, 3.0, window_y),
+            Feed::new(425.0, 123.0, 3.0, window_y),
+            Feed::new(435.0, 190.0, 3.0, window_y),
+            Feed::new(450.0, 400.0, 3.0, window_y),
+            Feed::new(470.0, 80.0, 3.0, window_y),
         ];
 
         Arena {
@@ -193,21 +193,9 @@ impl Eater {
             radius: radius,
             x: x,
             y: y,
-            left_speed: 2.0,
-            left_sensor: Sensor::new(
-                (x, y),
-                field_of_vision / 2.0,
-                [0.5, 0.5, 0.5, 1.0],
-                radius * 4.0,
-                radius,
-            ),
-            right_sensor: Sensor::new(
-                (x, y),
-                -field_of_vision / 2.0,
-                [0.5, 0.5, 0.5, 1.0],
-                radius * 4.0,
-                radius,
-            ),
+            left_sensor: Sensor::new((x, y), field_of_vision / 2.0, Color::Gray, radius * 4.0, radius),
+            right_sensor: Sensor::new((x, y), -field_of_vision / 2.0, Color::Gray, radius * 4.0, radius),
+            left_speed: 1.0,
             right_speed: 1.0,
             angle: 0.0,
             back: 0,
@@ -221,88 +209,84 @@ impl Eater {
         F: FnMut(&mut Eater, &Arena),
     {
         w.draw_2d(e, |c, g| {
-            clear([1.0, 1.0, 1.0, 1.0], g);
+            clear(Color::White.to_rgb(), g);
 
-            let action = (self.left_speed , self.right_speed );
+            let action = (self.left_speed, self.right_speed);
             let t = 1.0;
 
             self.eat(arena);
-            // if self.back > 0 && !self.is_touched(&arena){
-            if (self.back > 0 && !self.is_touched(arena)) || (self.back == 25 && self.is_touched(arena)){
-              let action = (-self.left_speed , -self.right_speed );
-              let v = (action.0 + action.1) / 2.0;
 
-              let delta_angle = delta_angle(action.0 * t, action.1 * t, self.radius);
-              let trans_x = -v * t *(self.angle + delta_angle / 2.0).to_radians().cos();
-              let trans_y = -v * t *(self.angle + delta_angle / 2.0).to_radians().sin();
+            if (self.back > 0 && !self.is_touched(arena)) || (self.back == 25 && self.is_touched(arena)) {
+                let action = (-self.left_speed, -self.right_speed);
+                let v = (action.0 + action.1) / 2.0;
 
-              let next_angle = (self.angle + delta_angle) % 360.0;
+                let delta_angle = delta_angle(action.0 * t, action.1 * t, self.radius);
+                let trans_x = -v * t * (self.angle + delta_angle / 2.0).to_radians().cos();
+                let trans_y = -v * t * (self.angle + delta_angle / 2.0).to_radians().sin();
 
-              self.draw(c, g, &arena, next_angle);
+                let next_angle = (self.angle + delta_angle) % 360.0;
 
-              self.left_speed = 1.0;
-              self.right_speed = 1.0;
-              self.update(-trans_x, -trans_y, next_angle);
-              self.back = self.back - 1;
-              // println!("back!!!!!!!!!!!!: {}, trans_x: {}, trans_y: {}, self_x: {}, self_y: {}, angle: {}, delta_angle: {}", self.back, trans_x, trans_y,  self.x, self.y, self.angle, delta_angle);
-              return ;
+                self.draw(c, g, &arena, next_angle);
+
+                self.left_speed = 1.0;
+                self.right_speed = 1.0;
+                self.update(-trans_x, -trans_y, next_angle);
+                self.back = self.back - 1;
+                return;
             }
 
             if self.is_touched(&arena) && self.back == 0 {
-              self.back = 25;
-              return;
+                self.back = 25;
+                return;
             }
 
-            let v = (action.0 + action.1) / 2.0;
+            // 対向2輪ロボットの移動方法
+            // http://www.mech.tohoku-gakuin.ac.jp/rde/contents/course/robotics/wheelrobot.html
 
-            let delta_l = action.0 * t;
-            let delta_r = action.1 * t;
-            let delta_angle = delta_angle(delta_l, delta_r, self.radius); // dleta-theta
+            let velocity_l = action.0 * t; // 左車輪の移動速度
+            let velocity_r = action.1 * t; // 右車輪の移動速度
+            let omega = delta_angle(velocity_l, velocity_r, self.radius); // 車体の角度の変化量。左右の車輪速度の違いと、車体の半径から求める
+            let next_angle = (self.angle + omega) % 360.0; // 次のフレームでの車体の向き
 
-            let next_angle = (self.angle + delta_angle) % 360.0;
+            // x座標とy座標にどれだけ動くかの差分を求めている
             let (trans_x, trans_y) = if action.1 != action.0 {
-              let l = (delta_l + delta_r) / 2.0; // delta-l
-              let p =  l * (360.0/ delta_angle) * (1.0/(2.0*3.14));
-              let delta_l_dash = 2.0 * p * (delta_angle / 2.0).to_radians().sin();
-              // println!("delta_l: {}, delta_r: {}, delata_angle: {}, p: {}, delta_l :{}", action.0, action.1,delta_angle,  p, delta_l_dash);
-              (delta_l_dash * (self.angle + delta_angle / 2.0).to_radians().cos(), delta_l_dash * (self.angle + delta_angle / 2.0).to_radians().sin())
+                // 左右の車輪の速度が違うとき
+                let velocity = (velocity_l + velocity_r) / 2.0; // delta-l 車中心部分の移動速度
+                let p = velocity * (360.0 / omega) * (1.0 / (2.0 * 3.14)); // 車体が描く円弧の回転半径(ρ)
+                let delta_l_dash = 2.0 * p * (omega / 2.0).to_radians().sin(); //1フレームにおける車体の中心の移動距離
+                (
+                    delta_l_dash * (self.angle + omega / 2.0).to_radians().cos(),
+                    delta_l_dash * (self.angle + omega / 2.0).to_radians().sin(),
+                )
             } else {
-              // println!("delta_l: {}, delta_r: {}, angle: {}, delata_angle: {}", action.0, action.1,self.angle, delta_angle);
-              (v * t *(self.angle + delta_angle / 2.0).to_radians().cos(), v * t *(self.angle + delta_angle / 2.0).to_radians().sin())
+                // 左車輪と右車輪が同速度の場合は直進するだけなので、現在の向きを維持したまま直進している
+                let v = action.0 * t; // 移動速度(action.1を使っても同じ)
+                (
+                    v * self.angle.to_radians().cos(), // 移動速度にcosθ(θは今向いている角度)をかければx方向にどれだけ動いたかが分かる
+                    v * self.angle.to_radians().sin(), // 移動速度にsinθ(θは今向いている角度)をかければy方向にどれだけ動いたかが分かる
+                )
             };
 
             self.draw(c, g, &arena, next_angle);
 
             update_closure(self, &arena);
-            // if let Some(data) = self.left_sensor.data(arena) {
-            //   self.left_speed = 2.0 + 2.0 * data;
-            // }
-            // if let Some(data) = self.right_sensor.data(arena) {
-            //   self.right_speed = 2.0 + 2.0 * data;
-            // }
             self.update(trans_x, trans_y, next_angle);
         });
     }
+
     fn eat(&mut self, arena: &mut Arena) {
         let mut eating = false;
         let point = Point::new(self.x, arena.window_height - self.y);
-        let arena_window_height = arena.window_height;
         for feed in &mut arena.feeds {
-            let ball = Ball::new(feed.radius);
-            let transformed = Isometry2::new(Vector2::new(feed.x, arena_window_height - feed.y), na::zero());
-            if ball.distance_to_point(&transformed, &point, false) <= self.radius {
+            if feed.distance_from_point(&point) <= self.radius {
                 feed.life -= 1;
                 eating = true;
             }
         }
         self.eating = eating;
-        arena.feeds.retain(|feed| {
-            feed.life != 0
-            // let ball = Ball::new(feed.radius);
-            // let transformed = Isometry2::new(Vector2::new(feed.x, arena_window_height - feed.y), na::zero());
-            // ball.distance_to_point(&transformed, &point, false) > self.radius
-        });
+        arena.feeds.retain(|feed| feed.life != 0);
     }
+
     pub fn sensor_data(&self, arena: &Arena) -> ((f64, f64), bool) {
         (
             (
@@ -371,12 +355,12 @@ pub struct Sensor {
     y: f64,
     field_of_vision: f64,
     angle: f64,
-    color: [f32; 4],
+    color: Color,
     length: f64,
     radius: f64,
 }
 impl Sensor {
-    pub fn new(orig: (f64, f64), field_of_vision: f64, color: [f32; 4], length: f64, radius: f64) -> Sensor {
+    pub fn new(orig: (f64, f64), field_of_vision: f64, color: Color, length: f64, radius: f64) -> Sensor {
         Sensor {
             x: orig.0,
             y: orig.1,
@@ -400,7 +384,7 @@ impl Sensor {
             -self.length * (self.field_of_vision).sin(),
         ];
         let transed = c.transform.trans(self.x, self.y);
-        line(self.color, 1.0, left_sensor, transed.rot_deg(-next_angle), g);
+        line(self.color.to_rgb(), 1.0, left_sensor, transed.rot_deg(-next_angle), g);
     }
     pub fn is_collide(&self, arena: &Arena) -> bool {
         if let Some(distance) = self.distance(arena) {
@@ -500,16 +484,29 @@ struct Feed {
     y: f64,
     radius: f64,
     life: u32,
+    ball: Ball<f64>,
+    transformed: Isometry2<f64>,
 }
 
 impl Feed {
-    pub fn new(x: f64, y: f64, radius: f64) -> Feed {
-        Feed { x, y, radius, life: 50 }
+    fn new(x: f64, y: f64, radius: f64, window_height: f64) -> Feed {
+        Feed {
+            x,
+            y,
+            radius,
+            life: 50,
+            ball: Ball::new(radius),
+            transformed: Isometry2::new(Vector2::new(x, window_height - y), na::zero()),
+        }
     }
-    pub fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>) {
+
+    fn distance_from_point(&self, point: &Point) -> f64 {
+        self.ball.distance_to_point(&self.transformed, &point, false)
+    }
+
+    fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>) {
         let square = ellipse::circle(self.x, self.y, self.radius);
-        let black = [0.0, 0.0, 0.0, 1.0];
-        ellipse(black, square, c.transform, g);
+        ellipse(Color::Black.to_rgb(), square, c.transform, g);
     }
 }
 
@@ -525,6 +522,8 @@ pub enum Color {
     LightCyan,
     LightGreen,
     Gray,
+    White,
+    Black,
 }
 
 impl Color {
@@ -536,6 +535,8 @@ impl Color {
             Color::LightCyan => [230.0 / 250.0, 230.0 / 250.0, 250.0 / 250.0, 1.0],
             Color::LightGreen => [144.0 / 255.0, 238.0 / 255.0, 144.0 / 255.0, 1.0],
             Color::Gray => [0.5, 0.5, 0.5, 1.0],
+            Color::White => [1.0, 1.0, 1.0, 1.0],
+            Color::Black => [0.0, 0.0, 0.0, 1.0],
         }
     }
 }
