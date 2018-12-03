@@ -6,8 +6,10 @@ use ncollide2d::query::PointQuery;
 use ncollide2d::query::{Ray, RayCast};
 use ncollide2d::shape::{Ball, Cuboid};
 use piston_window::*;
+use std::f64;
 
 type Point = Point2<f64>;
+type Isometry = Isometry2<f64>;
 
 /// 車の動きを再現するsimulator
 pub struct Simulator {
@@ -25,7 +27,7 @@ impl Simulator {
         let arena = Arena::new(display_size.0 as f64, display_size.1 as f64);
         let orig_x = arena.visual_orig.0 + 50.0;
         let orig_y = (arena.visual_orig.1 + arena.height) / 2.0 - 30.0;
-        let eater = Eater::new((orig_x, orig_y), display_size.1 as f64);
+        let eater = Eater::new(orig_x, orig_y, 15.0, display_size.1 as f64);
 
         Simulator {
             display_size: display_size,
@@ -51,12 +53,12 @@ impl Simulator {
 /// piston座標系は原点を左上、右方向にx、下方向にy、半時計回りにθとする  
 /// ncollide座標系は原点を左下、右方向にx、上方向にy、半時計回りにθとする
 pub struct Arena {
-    visual_orig: (f64, f64),     // 描画上の原点
-    width: f64,                  // arenaの横幅
-    height: f64,                 //arenaの縦幅
-    window_height: f64,          // windowの縦幅
+    visual_orig: (f64, f64),  // 描画上の原点
+    width: f64,               // arenaの横幅
+    height: f64,              //arenaの縦幅
+    window_height: f64,       // windowの縦幅
     cuboid: Cuboid<f64>, // 長方形型のobjectでarenaと同じ大きさ。衝突や車との距離を検知する
-    transformed: Isometry2<f64>, // cuboidと一緒に使って衝突や車との距離を検知する
+    transformed: Isometry, // cuboidと一緒に使って衝突や車との距離を検知する
     obstacles: Vec<Obstacle>, // arena内の障害物
     feeds: Vec<Feed>,    // arena内のゴミ
 }
@@ -69,7 +71,7 @@ impl Arena {
         let resize = 0.9; // arenaの大きさをウィンドウの何%にするか
         let x_diff = window_x * (1.0 - resize) * 0.5;
         let y_diff = window_y * (1.0 - resize) * 0.5;
-        let transformed = Isometry2::new(
+        let transformed = Isometry::new(
             Vector2::new(
                 x_diff + (window_x - x_diff * 2.0) / 2.0,
                 y_diff + (window_y - y_diff * 2.0) / 2.0,
@@ -136,18 +138,18 @@ impl Arena {
     }
 
     /// arena内のある座標から最も近い壁との距離を取得する
-    pub fn distance_to_nearest_wall(&self, point: &Point) -> f64 {
+    fn distance_to_nearest_wall(&self, point: &Point) -> f64 {
         -self.cuboid.distance_to_point(&self.transformed, point, false)
     }
 
     /// arena内のある座標からある方角に直線上の光線を発射したときに壁にぶつかるまでの時間を取得する  
     /// ある位置から任意の方角の壁との距離を図るのに使う
-    pub fn toi_in_direction(&self, ray: &Ray<f64>) -> f64 {
+    fn toi_in_direction(&self, ray: &Ray<f64>) -> f64 {
         let intersection = self.cuboid.toi_and_normal_with_ray(&self.transformed, ray, false);
         intersection.map_or(f64::MAX, |intersection| intersection.toi)
     }
 
-    pub fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>) {
+    fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>) {
         Rectangle::new_border(Color::LightCyan.to_rgb(), 1.5).draw(
             [self.visual_orig.0, self.visual_orig.1, self.width, self.height], // (x, y, width, height)
             &c.draw_state,
@@ -182,12 +184,9 @@ pub struct Eater {
     color: Color,
 }
 
-use std::f64;
-impl Eater {
-    pub fn new(orig: (f64, f64), height: f64) -> Eater {
-        let radius = 15.0;
-        let x = orig.0;
-        let y = height - orig.1;
+impl Object for Eater {
+    fn new(x: f64, y: f64, radius: f64, window_height: f64) -> Eater {
+        let y = window_height - y;
         let field_of_vision = 120.0_f64.to_radians();
         Eater {
             radius: radius,
@@ -203,7 +202,10 @@ impl Eater {
             color: Color::LightGreen,
         }
     }
-    pub fn render<E, F>(&mut self, w: &mut PistonWindow, e: &E, arena: &mut Arena, mut update_closure: F)
+}
+
+impl Eater {
+    fn render<E, F>(&mut self, w: &mut PistonWindow, e: &E, arena: &mut Arena, mut update_closure: F)
     where
         E: generic_event::GenericEvent,
         F: FnMut(&mut Eater, &Arena),
@@ -217,7 +219,7 @@ impl Eater {
             self.eat(arena);
 
             // 後退中の場合
-            if (self.back > 0 && !self.is_touched(arena)) || (self.back == 25 && self.is_touched(arena)) {
+            if (self.back > 0 && !self.is_touching(arena)) || (self.back == 25 && self.is_touching(arena)) {
                 let action = (-self.left_speed, -self.right_speed);
                 let v = (action.0 + action.1) / 2.0;
 
@@ -237,7 +239,7 @@ impl Eater {
             }
 
             // 障害物に接触したときは一定時間後退する。後退中に障害物に接触したときは後退をやめる
-            if self.is_touched(&arena) && self.back == 0 {
+            if self.is_touching(&arena) && self.back == 0 {
                 self.back = 25;
                 return;
             }
@@ -309,7 +311,7 @@ impl Eater {
         self.eating
     }
 
-    pub fn is_touched(&self, arena: &Arena) -> bool {
+    fn is_touching(&self, arena: &Arena) -> bool {
         let point = Point::new(self.x, self.y);
         let mut nearest_distance = arena.distance_to_nearest_wall(&point);
 
@@ -414,7 +416,7 @@ impl Sensor {
         // obstacles distance
         for obstacle in &arena.obstacles {
             let ball = Ball::new(obstacle.radius);
-            let transformed = Isometry2::new(Vector2::new(obstacle.x, arena.window_height - obstacle.y), na::zero());
+            let transformed = Isometry::new(Vector2::new(obstacle.x, arena.window_height - obstacle.y), na::zero());
             let intersection = ball.toi_and_normal_with_ray(&transformed, &ray, false);
             if let Some(i) = intersection {
                 if closest_toi > i.toi {
@@ -437,25 +439,27 @@ struct Obstacle {
     y: f64,
     radius: f64,
     ball: Ball<f64>,
-    transformed: Isometry2<f64>,
+    transformed: Isometry,
 }
 
-impl Obstacle {
-    pub fn new(x: f64, y: f64, radius: f64, window_height: f64) -> Obstacle {
+impl Object for Obstacle {
+    fn new(x: f64, y: f64, radius: f64, window_height: f64) -> Obstacle {
         Obstacle {
             x,
             y,
             radius,
             ball: Ball::new(radius),
-            transformed: Isometry2::new(Vector2::new(x, window_height - y), na::zero()),
+            transformed: Isometry::new(Vector2::new(x, window_height - y), na::zero()),
         }
     }
+}
 
+impl Target for Obstacle {
     fn distance_from_point(&self, point: &Point) -> f64 {
         self.ball.distance_to_point(&self.transformed, &point, false)
     }
 
-    pub fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>) {
+    fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>) {
         let square = ellipse::circle(self.x, self.y, self.radius);
         ellipse(Color::LightCyan.to_rgb(), square, c.transform, g);
     }
@@ -467,10 +471,10 @@ struct Feed {
     radius: f64,
     life: u32,
     ball: Ball<f64>,
-    transformed: Isometry2<f64>,
+    transformed: Isometry,
 }
 
-impl Feed {
+impl Object for Feed {
     fn new(x: f64, y: f64, radius: f64, window_height: f64) -> Feed {
         Feed {
             x,
@@ -478,10 +482,12 @@ impl Feed {
             radius,
             life: 50,
             ball: Ball::new(radius),
-            transformed: Isometry2::new(Vector2::new(x, window_height - y), na::zero()),
+            transformed: Isometry::new(Vector2::new(x, window_height - y), na::zero()),
         }
     }
+}
 
+impl Target for Feed {
     fn distance_from_point(&self, point: &Point) -> f64 {
         self.ball.distance_to_point(&self.transformed, &point, false)
     }
@@ -521,4 +527,13 @@ impl Color {
             Color::Black => [0.0, 0.0, 0.0, 1.0],
         }
     }
+}
+
+trait Object {
+    fn new(x: f64, y: f64, radius: f64, window_height: f64) -> Self;
+}
+
+trait Target: Object {
+    fn distance_from_point(&self, point: &Point) -> f64;
+    fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>);
 }

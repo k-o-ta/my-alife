@@ -1,5 +1,6 @@
 use rand::{thread_rng, Rng};
 use simulator::vehicle_simulator::Color;
+
 pub trait Module {
     fn set_input(&mut self, sensor_data: ((f64, f64), bool));
     fn update(&mut self);
@@ -74,7 +75,6 @@ impl Module for WanderModule {
             self.left_speed = self.child_module.get_wheelspeed().0;
             self.right_speed = self.child_module.get_wheelspeed().1;
             self.color = self.child_module.get_color();
-        // println!("avoiding, left: {}, right: {}", self.left_speed, self.right_speed);
         } else if self.counter == Self::TURN_START_STEP {
             println!("into wander");
             let random: f64 = thread_rng().gen();
@@ -88,9 +88,11 @@ impl Module for WanderModule {
             self.color = Color::Green;
         }
     }
+
     fn get_wheelspeed(&self) -> (f64, f64) {
         (self.left_speed, self.right_speed)
     }
+
     fn get_color(&self) -> Color {
         self.color
     }
@@ -123,7 +125,7 @@ pub struct ExploreModule {
     left_speed: f64,
     right_speed: f64,
     color: Color,
-    touching: bool,
+    eating: bool,
     child_module: WanderModule,
 }
 
@@ -131,13 +133,13 @@ impl Module for ExploreModule {
     fn set_input(&mut self, sensor_data: ((f64, f64), bool)) {
         self.child_module.set_input(sensor_data);
         let distance = sensor_data.0;
-        let is_touching = sensor_data.1;
         self.left_distance = distance.0;
         self.right_distance = distance.1;
-        self.touching = is_touching;
+        self.eating = sensor_data.1
     }
+
     fn update(&mut self) {
-        if self.touching {
+        if self.eating {
             self.right_speed = 0.0;
             self.left_speed = 0.0;
             self.color = Color::Blue;
@@ -149,9 +151,11 @@ impl Module for ExploreModule {
             self.color = self.child_module.get_color();
         }
     }
+
     fn get_wheelspeed(&self) -> (f64, f64) {
         (self.left_speed, self.right_speed)
     }
+
     fn get_color(&self) -> Color {
         self.color
     }
@@ -165,7 +169,7 @@ impl ExploreModule {
             left_speed: 0.0,
             right_speed: 0.0,
             color: Color::Blue,
-            touching: false,
+            eating: false,
             child_module: WanderModule::new(),
         }
     }
