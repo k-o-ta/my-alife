@@ -67,7 +67,7 @@ impl Arena {
     /// # Arguments
     /// * `window_x` - ウィンドウの横幅(arenaの横幅ではない)
     /// * `window_y` - ウィンドウの縦幅(arenaの縦幅ではない)
-    pub fn new(window_x: f64, window_y: f64) -> Arena {
+    fn new(window_x: f64, window_y: f64) -> Arena {
         let resize = 0.9; // arenaの大きさをウィンドウの何%にするか
         let x_diff = window_x * (1.0 - resize) * 0.5;
         let y_diff = window_y * (1.0 - resize) * 0.5;
@@ -325,7 +325,7 @@ impl Eater {
         nearest_distance < (self.radius)
     }
 
-    pub fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>, arena: &Arena, next_angle: f64) {
+    fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>, arena: &Arena, next_angle: f64) {
         arena.draw(c, g);
         self.left_sensor.draw(c, g, next_angle);
         self.right_sensor.draw(c, g, next_angle);
@@ -343,7 +343,7 @@ impl Eater {
         self.color = color;
     }
 
-    pub fn update(&mut self, trans_x: f64, trans_y: f64, next_angle: f64) {
+    fn update(&mut self, trans_x: f64, trans_y: f64, next_angle: f64) {
         self.x = self.x + trans_x;
         self.y = self.y - trans_y; // trans_yはncollide座標系の値なので、piston座標系に合わせて反転させる
         self.angle = next_angle;
@@ -533,6 +533,7 @@ trait Object {
     fn new(x: f64, y: f64, radius: f64, window_height: f64) -> Self;
 }
 
+// 継承っぽいことができるTargetを実装するstructはobjectも実装しないといけない
 trait Target: Object {
     fn distance_from_point(&self, point: &Point) -> f64;
     fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>);

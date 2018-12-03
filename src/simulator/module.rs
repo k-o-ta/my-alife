@@ -2,6 +2,7 @@ use rand::{thread_rng, Rng};
 use simulator::vehicle_simulator::Color;
 
 pub trait Module {
+    /// 引数名はあってもなくても良い。
     fn set_input(&mut self, sensor_data: ((f64, f64), bool));
     fn update(&mut self);
     fn get_wheelspeed(&self) -> (f64, f64);
