@@ -77,11 +77,11 @@ impl Arena {
             na::zero(),
         );
         let obstacles = vec![
-            Obstacle::new(150.0, 225.0, 30.0),
-            Obstacle::new(300.0, 100.0, 30.0),
-            Obstacle::new(450.0, 225.0, 30.0),
-            Obstacle::new(375.0, 380.0, 30.0),
-            Obstacle::new(225.0, 380.0, 30.0),
+            Obstacle::new(150.0, 225.0, 30.0, window_y),
+            Obstacle::new(300.0, 100.0, 30.0, window_y),
+            Obstacle::new(450.0, 225.0, 30.0, window_y),
+            Obstacle::new(375.0, 380.0, 30.0, window_y),
+            Obstacle::new(225.0, 380.0, 30.0, window_y),
         ];
         let feeds = vec![
             Feed::new(100.0, 100.0, 3.0, window_y),
@@ -216,6 +216,7 @@ impl Eater {
 
             self.eat(arena);
 
+            // 後退中の場合
             if (self.back > 0 && !self.is_touched(arena)) || (self.back == 25 && self.is_touched(arena)) {
                 let action = (-self.left_speed, -self.right_speed);
                 let v = (action.0 + action.1) / 2.0;
@@ -235,6 +236,7 @@ impl Eater {
                 return;
             }
 
+            // 障害物に接触したときは一定時間後退する。後退中に障害物に接触したときは後退をやめる
             if self.is_touched(&arena) && self.back == 0 {
                 self.back = 25;
                 return;
@@ -246,17 +248,16 @@ impl Eater {
             let velocity_l = action.0 * t; // 左車輪の移動速度
             let velocity_r = action.1 * t; // 右車輪の移動速度
             let omega = delta_angle(velocity_l, velocity_r, self.radius); // 車体の角度の変化量。左右の車輪速度の違いと、車体の半径から求める
-            let next_angle = (self.angle + omega) % 360.0; // 次のフレームでの車体の向き
 
             // x座標とy座標にどれだけ動くかの差分を求めている
             let (trans_x, trans_y) = if action.1 != action.0 {
                 // 左右の車輪の速度が違うとき
                 let velocity = (velocity_l + velocity_r) / 2.0; // delta-l 車中心部分の移動速度
-                let p = velocity * (360.0 / omega) * (1.0 / (2.0 * 3.14)); // 車体が描く円弧の回転半径(ρ)
-                let delta_l_dash = 2.0 * p * (omega / 2.0).to_radians().sin(); //1フレームにおける車体の中心の移動距離
+                let roh = velocity * (360.0 / omega) * (1.0 / (2.0 * 3.14)); // 車体が描く円弧の回転半径(ρ)
+                let delta_l_dash = 2.0 * roh * (omega / 2.0).to_radians().sin(); //1フレームにおける車体の中心の移動距離(ΔL')
                 (
-                    delta_l_dash * (self.angle + omega / 2.0).to_radians().cos(),
-                    delta_l_dash * (self.angle + omega / 2.0).to_radians().sin(),
+                    delta_l_dash * (self.angle + omega / 2.0).to_radians().cos(), // 1フレームにおける車体のx座標の移動距離
+                    delta_l_dash * (self.angle + omega / 2.0).to_radians().sin(), // 1フレームにおける車体のy座標の移動距離
                 )
             } else {
                 // 左車輪と右車輪が同速度の場合は直進するだけなので、現在の向きを維持したまま直進している
@@ -267,6 +268,7 @@ impl Eater {
                 )
             };
 
+            let next_angle = (self.angle + omega) % 360.0; // 次のフレームでの車体の向き
             self.draw(c, g, &arena, next_angle);
 
             update_closure(self, &arena);
@@ -287,6 +289,12 @@ impl Eater {
         arena.feeds.retain(|feed| feed.life != 0);
     }
 
+    /// 左右のセンサーからの情報を取得する
+    ///
+    /// # Arguments
+    /// * `arena` - フロアの情報
+    /// # Return
+    /// * ((左センサーと障害物との距離, 右センサーと障害物との距離), 車体がゴミを食べているかどうか)
     pub fn sensor_data(&self, arena: &Arena) -> ((f64, f64), bool) {
         (
             (
@@ -296,34 +304,23 @@ impl Eater {
             self.is_eating(),
         )
     }
+
     fn is_eating(&self) -> bool {
         self.eating
     }
+
     pub fn is_touched(&self, arena: &Arena) -> bool {
         let point = Point::new(self.x, self.y);
-        let mut distance = arena.distance_to_nearest_wall(&point);
+        let mut nearest_distance = arena.distance_to_nearest_wall(&point);
 
+        let point = Point::new(self.x, arena.window_height - self.y);
         for obstacle in &arena.obstacles {
-            // let point = Point::new(self.x, arena.window_height - self.y);
-            let point = Point::new(self.x, arena.window_height - self.y);
-            let ball = Ball::new(obstacle.radius);
-            let transformed = Isometry2::new(Vector2::new(obstacle.x, arena.window_height - obstacle.y), na::zero());
-            // let transformed = Isometry2::new(Vector2::new(obstacle.x, obstacle.y), na::zero());
-            let o_distance = ball.distance_to_point(&transformed, &point, false);
-            // println!("o distance: {}, arana_distance: {}", o_distance, distance);
-            if distance > o_distance {
-                // println!("o distance: {}", o_distance);
-                distance = o_distance
-                // thread::sleep(time::Duration::from_millis(3000));
+            let distance = obstacle.distance_from_point(&point);
+            if nearest_distance > distance {
+                nearest_distance = distance
             }
         }
-        distance < (self.radius)
-    }
-
-    pub fn is_collide(&self, arena: &Arena) -> bool {
-        let l = self.left_sensor.is_collide(arena);
-        let r = self.right_sensor.is_collide(arena);
-        l || r
+        nearest_distance < (self.radius)
     }
 
     pub fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>, arena: &Arena, next_angle: f64) {
@@ -339,17 +336,20 @@ impl Eater {
         let transed = c.transform.trans(self.x, self.y);
         line(center_line_color, 1.0, zero_center, transed.rot_deg(-next_angle), g);
     }
+
     pub fn update_color(&mut self, color: Color) {
         self.color = color;
     }
+
     pub fn update(&mut self, trans_x: f64, trans_y: f64, next_angle: f64) {
         self.x = self.x + trans_x;
-        self.y = self.y - trans_y;
+        self.y = self.y - trans_y; // trans_yはncollide座標系の値なので、piston座標系に合わせて反転させる
         self.angle = next_angle;
         self.left_sensor.update((self.x, self.y), self.angle);
         self.right_sensor.update((self.x, self.y), self.angle);
     }
 }
+
 pub struct Sensor {
     x: f64,
     y: f64,
@@ -359,8 +359,21 @@ pub struct Sensor {
     length: f64,
     radius: f64,
 }
+
 impl Sensor {
-    pub fn new(orig: (f64, f64), field_of_vision: f64, color: Color, length: f64, radius: f64) -> Sensor {
+    // 壁及び障害物の内、最も近いものとの距離を正規化して取得する
+    // 近いほど1に近くなり、遠いと0になる
+    pub fn data(&self, arena: &Arena) -> Option<f64> {
+        if let Some(distance) = self.nearest_distance(arena) {
+            if distance >= self.length {
+                return Some(0.0);
+            }
+            return Some(1.0 - (distance - self.radius) / (self.length - self.radius));
+        }
+        None
+    }
+
+    fn new(orig: (f64, f64), field_of_vision: f64, color: Color, length: f64, radius: f64) -> Sensor {
         Sensor {
             x: orig.0,
             y: orig.1,
@@ -371,12 +384,14 @@ impl Sensor {
             radius,
         }
     }
-    pub fn update(&mut self, pos: (f64, f64), angle: f64) {
+
+    fn update(&mut self, pos: (f64, f64), angle: f64) {
         self.x = pos.0;
         self.y = pos.1;
         self.angle = angle;
     }
-    pub fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>, next_angle: f64) {
+
+    fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>, next_angle: f64) {
         let left_sensor = [
             0.0,
             0.0,
@@ -386,40 +401,20 @@ impl Sensor {
         let transed = c.transform.trans(self.x, self.y);
         line(self.color.to_rgb(), 1.0, left_sensor, transed.rot_deg(-next_angle), g);
     }
-    pub fn is_collide(&self, arena: &Arena) -> bool {
-        if let Some(distance) = self.distance(arena) {
-            let collide = distance < self.length;
-            // println!("distance: {}, length: {}", distance, self.length);
-            if collide {
-                // thread::sleep(time::Duration::from_millis(3000));
-            }
-            return collide;
-        }
-        false
-    }
 
-    pub fn data(&self, arena: &Arena) -> Option<f64> {
-        if let Some(distance) = self.distance(arena) {
-            if distance >= self.length {
-                return Some(0.0);
-            }
-            return Some(1.0 - (distance - self.radius) / (self.length - self.radius));
-        }
-        None
-    }
-
-    fn distance(&self, arena: &Arena) -> Option<f64> {
+    // 壁及び障害物の内、最も近いものとの距離
+    fn nearest_distance(&self, arena: &Arena) -> Option<f64> {
         let theta = self.field_of_vision + self.angle.to_radians();
         let dir_x = theta.cos();
         let dir_y = theta.sin();
         let y = arena.window_height - self.y;
         let ray = Ray::new(Point::new(self.x, y), Vector2::new(dir_x, dir_y));
         let mut closest_toi: f64 = arena.toi_in_direction(&ray); // センサーと壁との距離を衝突時間で表す
-                                                                 // obstacles distance
+
+        // obstacles distance
         for obstacle in &arena.obstacles {
             let ball = Ball::new(obstacle.radius);
             let transformed = Isometry2::new(Vector2::new(obstacle.x, arena.window_height - obstacle.y), na::zero());
-            // let transformed = Isometry2::new(Vector2::new(obstacle.x, obstacle.y), na::zero());
             let intersection = ball.toi_and_normal_with_ray(&transformed, &ray, false);
             if let Some(i) = intersection {
                 if closest_toi > i.toi {
@@ -427,36 +422,10 @@ impl Sensor {
                 }
             }
         }
-        // println!(
-        //     "time: {}, distance: {}",
-        //     closest_toi,
-        //     self.intersection_distance(dir_x, dir_y, closest_toi, y)
-        // );
+
         Some(self.intersection_distance(dir_x, dir_y, closest_toi, y))
-        // let closest_toi = arena
-        //     .obstacles
-        //     .iter()
-        //     .map(|obstacle| {
-        //         let ball = Ball::new(obstacle.radius);
-        //         let transformed = Isometry2::new(Vector2::new(obstacle.x, obstacle.y), na::zero());
-        //         ball.toi_and_normal_with_ray(&transformed, &ray, false)
-        //             .map_or(f64::MAX, |intersection| intersection.toi)
-        //     }).fold(0.0 / 0.0, |m, v| v.min(m));
-        //
-        // if closest_toi == f64::NAN && arena_toi == f64::NAN {
-        //     None
-        // } else if closest_toi == f64::NAN && arena_toi != f64::NAN {
-        //     Some(self.intersection_distance(dir_x, dir_y, arena_toi, y))
-        // } else {
-        //     Some(self.intersection_distance(dir_x, dir_y, closest_toi, y))
-        // }
-        // if let Some(i) = inter {
-        //     let i_point = (self.x + dir_x * i.toi, y + dir_y * i.toi);
-        //     let distance = ((self.x - i_point.0).powi(2) + (y - i_point.1).powi(2)).sqrt();
-        //     return Some(distance);
-        // }
-        // None
     }
+
     fn intersection_distance(&self, dir_x: f64, dir_y: f64, toi: f64, y: f64) -> f64 {
         let i_point = (self.x + dir_x * toi, y + dir_y * toi);
         ((self.x - i_point.0).powi(2) + (y - i_point.1).powi(2)).sqrt()
@@ -467,12 +436,25 @@ struct Obstacle {
     x: f64,
     y: f64,
     radius: f64,
+    ball: Ball<f64>,
+    transformed: Isometry2<f64>,
 }
 
 impl Obstacle {
-    pub fn new(x: f64, y: f64, radius: f64) -> Obstacle {
-        Obstacle { x, y, radius }
+    pub fn new(x: f64, y: f64, radius: f64, window_height: f64) -> Obstacle {
+        Obstacle {
+            x,
+            y,
+            radius,
+            ball: Ball::new(radius),
+            transformed: Isometry2::new(Vector2::new(x, window_height - y), na::zero()),
+        }
     }
+
+    fn distance_from_point(&self, point: &Point) -> f64 {
+        self.ball.distance_to_point(&self.transformed, &point, false)
+    }
+
     pub fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>) {
         let square = ellipse::circle(self.x, self.y, self.radius);
         ellipse(Color::LightCyan.to_rgb(), square, c.transform, g);
@@ -511,7 +493,7 @@ impl Feed {
 }
 
 fn delta_angle(delta_left: f64, delta_right: f64, radius: f64) -> f64 {
-    90.0 * (delta_right - delta_left) / (radius * 3.14)
+    ((delta_right - delta_left) / (radius * 2.0)) * (180.0 / 3.14) // 1フレーム当たりの車体の角度の差分を求める式。結果はradなので度数に直している。
 }
 
 #[derive(Copy, Clone)]
