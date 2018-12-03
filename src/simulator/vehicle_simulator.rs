@@ -7,6 +7,8 @@ use ncollide2d::query::{Ray, RayCast};
 use ncollide2d::shape::{Ball, Cuboid};
 use piston_window::*;
 
+type Point = Point2<f64>;
+
 /// 車の動きを再現するsimulator
 pub struct Simulator {
     display_size: (u32, u32),
@@ -21,10 +23,9 @@ impl Simulator {
     /// * `display_size` - ウィンドウのサイズ
     pub fn new(display_size: (u32, u32)) -> Simulator {
         let arena = Arena::new(display_size.0 as f64, display_size.1 as f64);
-        let orig_x = arena.nw.0 + 50.0;
-        let orig_y = (arena.nw.1 + arena.height) / 2.0 - 30.0;
+        let orig_x = arena.visual_orig.0 + 50.0;
+        let orig_y = (arena.visual_orig.1 + arena.height) / 2.0 - 30.0;
         let eater = Eater::new((orig_x, orig_y), display_size.1 as f64);
-        // let eater = Eater::new((100.0, 100.0), display_size.1 as f64);
 
         Simulator {
             display_size: display_size,
@@ -36,7 +37,7 @@ impl Simulator {
     where
         F: FnMut(&mut Eater, &Arena),
     {
-        let mut window: PistonWindow = WindowSettings::new("Hello Piston!", self.display_size)
+        let mut window: PistonWindow = WindowSettings::new("subsumption model", self.display_size)
             .exit_on_esc(true)
             .build()
             .unwrap_or_else(|e| panic!("Failed to build PistonWindow: {}", e));
@@ -46,40 +47,34 @@ impl Simulator {
     }
 }
 
+/// 車が動き回れるエリア  
+/// piston座標系は原点を左上、右方向にx、下方向にy、半時計回りにθとする  
+/// ncollide座標系は原点を左下、右方向にx、上方向にy、半時計回りにθとする
 pub struct Arena {
-    nw: (f64, f64),
-    width: f64,
-    height: f64,
-    window_height: f64,
-    pub cuboid: Cuboid<f64>,
-    pub transformed: Isometry2<f64>,
-    obstacles: Vec<Obstacle>,
-    feeds: Vec<Feed>,
+    visual_orig: (f64, f64),     // 描画上の原点
+    width: f64,                  // arenaの横幅
+    height: f64,                 //arenaの縦幅
+    window_height: f64,          // windowの縦幅
+    cuboid: Cuboid<f64>, // 長方形型のobjectでarenaと同じ大きさ。衝突や車との距離を検知する
+    transformed: Isometry2<f64>, // cuboidと一緒に使って衝突や車との距離を検知する
+    obstacles: Vec<Obstacle>, // arena内の障害物
+    feeds: Vec<Feed>,    // arena内のゴミ
 }
 impl Arena {
+    /// arenaを生成する
+    /// # Arguments
+    /// * `window_x` - ウィンドウの横幅(arenaの横幅ではない)
+    /// * `window_y` - ウィンドウの縦幅(arenaの縦幅ではない)
     pub fn new(window_x: f64, window_y: f64) -> Arena {
-        let resize = 0.9;
+        let resize = 0.9; // arenaの大きさをウィンドウの何%にするか
         let x_diff = window_x * (1.0 - resize) * 0.5;
         let y_diff = window_y * (1.0 - resize) * 0.5;
-        // let transformed = Isometry2::new(Vector2::new(x_diff, y_diff), na::zero());
         let transformed = Isometry2::new(
             Vector2::new(
                 x_diff + (window_x - x_diff * 2.0) / 2.0,
                 y_diff + (window_y - y_diff * 2.0) / 2.0,
             ),
             na::zero(),
-        );
-        // let transformed = Isometry2::identity();
-        // let _t = ;
-        println!(
-            "x_diff: {}, y_diff: {}, cubic_pos: {:?},se: {:?}",
-            x_diff,
-            y_diff,
-            (window_x - x_diff * 2.0, window_y - y_diff * 2.0),
-            (
-                (window_x - x_diff * 2.0) * 0.5 + x_diff + (window_x - x_diff * 2.0) / 2.0,
-                (window_y - y_diff * 2.0) * 0.5 + y_diff + (window_y - y_diff * 2.0) / 2.0,
-            )
         );
         let obstacles = vec![
             Obstacle::new(150.0, 225.0, 30.0),
@@ -126,12 +121,10 @@ impl Arena {
         ];
 
         Arena {
-            nw: (x_diff, y_diff),
+            visual_orig: (x_diff, y_diff),
             width: window_x - x_diff * 2.0,
             height: window_y - y_diff * 2.0,
             cuboid: Cuboid::new(Vector2::new(
-                // (window_x - x_diff * 2.0) * 0.5,
-                // (window_y - y_diff * 2.0) * 0.5,
                 (window_x - x_diff * 2.0) * 0.5,
                 (window_y - y_diff * 2.0) * 0.5,
             )),
@@ -142,10 +135,21 @@ impl Arena {
         }
     }
 
+    /// arena内のある座標から最も近い壁との距離を取得する
+    pub fn distance_to_nearest_wall(&self, point: &Point) -> f64 {
+        -self.cuboid.distance_to_point(&self.transformed, point, false)
+    }
+
+    /// arena内のある座標からある方角に直線上の光線を発射したときに壁にぶつかるまでの時間を取得する  
+    /// ある位置から任意の方角の壁との距離を図るのに使う
+    pub fn toi_in_direction(&self, ray: &Ray<f64>) -> f64 {
+        let intersection = self.cuboid.toi_and_normal_with_ray(&self.transformed, ray, false);
+        intersection.map_or(f64::MAX, |intersection| intersection.toi)
+    }
+
     pub fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>) {
-        let blue = Color::Blue2.to_rgb();
-        Rectangle::new_border(blue, 1.5).draw(
-            [self.nw.0, self.nw.1, self.width, self.height], // (x, y, width, height)
+        Rectangle::new_border(Color::LightCyan.to_rgb(), 1.5).draw(
+            [self.visual_orig.0, self.visual_orig.1, self.width, self.height], // (x, y, width, height)
             &c.draw_state,
             c.transform,
             g,
@@ -158,13 +162,19 @@ impl Arena {
         }
     }
 }
+
+/// 車
 pub struct Eater {
-    radius: f64,
-    x: f64,
-    y: f64,
+    radius: f64, // 車の半径
+    x: f64,      // piston座標系におけるx座標
+    y: f64,      // piston座標系におけるy座標
+    /// 車体左側のセンサー
     pub left_sensor: Sensor,
+    /// 車体右側のセンサー
     pub right_sensor: Sensor,
+    /// 左車輪の速度
     pub left_speed: f64,
+    /// 右車輪の速度
     pub right_speed: f64,
     angle: f64,
     back: i32,
@@ -275,7 +285,7 @@ impl Eater {
     }
     fn eat(&mut self, arena: &mut Arena) {
         let mut eating = false;
-        let point = Point2::new(self.x, arena.window_height - self.y);
+        let point = Point::new(self.x, arena.window_height - self.y);
         let arena_window_height = arena.window_height;
         for feed in &mut arena.feeds {
             let ball = Ball::new(feed.radius);
@@ -306,12 +316,12 @@ impl Eater {
         self.eating
     }
     pub fn is_touched(&self, arena: &Arena) -> bool {
-        let point = Point2::new(self.x, self.y);
-        let mut distance = -arena.cuboid.distance_to_point(&arena.transformed, &point, false);
+        let point = Point::new(self.x, self.y);
+        let mut distance = arena.distance_to_nearest_wall(&point);
 
         for obstacle in &arena.obstacles {
-            // let point = Point2::new(self.x, arena.window_height - self.y);
-            let point = Point2::new(self.x, arena.window_height - self.y);
+            // let point = Point::new(self.x, arena.window_height - self.y);
+            let point = Point::new(self.x, arena.window_height - self.y);
             let ball = Ball::new(obstacle.radius);
             let transformed = Isometry2::new(Vector2::new(obstacle.x, arena.window_height - obstacle.y), na::zero());
             // let transformed = Isometry2::new(Vector2::new(obstacle.x, obstacle.y), na::zero());
@@ -419,10 +429,9 @@ impl Sensor {
         let dir_x = theta.cos();
         let dir_y = theta.sin();
         let y = arena.window_height - self.y;
-        let ray = Ray::new(Point2::new(self.x, y), Vector2::new(dir_x, dir_y));
-        let inter = arena.cuboid.toi_and_normal_with_ray(&arena.transformed, &ray, false);
-        let mut closest_toi: f64 = inter.map_or(f64::MAX, |intersection| intersection.toi);
-        // obstacles distance
+        let ray = Ray::new(Point::new(self.x, y), Vector2::new(dir_x, dir_y));
+        let mut closest_toi: f64 = arena.toi_in_direction(&ray); // センサーと壁との距離を衝突時間で表す
+                                                                 // obstacles distance
         for obstacle in &arena.obstacles {
             let ball = Ball::new(obstacle.radius);
             let transformed = Isometry2::new(Vector2::new(obstacle.x, arena.window_height - obstacle.y), na::zero());
@@ -482,8 +491,7 @@ impl Obstacle {
     }
     pub fn draw(&self, c: Context, g: &mut GfxGraphics<'_, Resources, CommandBuffer>) {
         let square = ellipse::circle(self.x, self.y, self.radius);
-        let blue = [230.0 / 250.0, 230.0 / 250.0, 250.0 / 250.0, 1.0];
-        ellipse(blue, square, c.transform, g);
+        ellipse(Color::LightCyan.to_rgb(), square, c.transform, g);
     }
 }
 
@@ -514,7 +522,7 @@ pub enum Color {
     Red,
     Green,
     Blue,
-    Blue2,
+    LightCyan,
     LightGreen,
     Gray,
 }
@@ -525,7 +533,7 @@ impl Color {
             Color::Red => [1.0, 0.0, 0.0, 1.0],
             Color::Green => [0.0, 1.0, 0.0, 1.0],
             Color::Blue => [0.0, 0.0, 1.0, 1.0],
-            Color::Blue2 => [230.0 / 250.0, 230.0 / 250.0, 250.0 / 250.0, 1.0],
+            Color::LightCyan => [230.0 / 250.0, 230.0 / 250.0, 250.0 / 250.0, 1.0],
             Color::LightGreen => [144.0 / 255.0, 238.0 / 255.0, 144.0 / 255.0, 1.0],
             Color::Gray => [0.5, 0.5, 0.5, 1.0],
         }
