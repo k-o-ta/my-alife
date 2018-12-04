@@ -11,7 +11,7 @@ pub trait Module {
 
 pub struct AvoidModule {
     left_distance: f64,
-    righ_distance: f64,
+    right_distance: f64,
     left_speed: f64,
     right_speed: f64,
     color: Color,
@@ -21,11 +21,11 @@ impl Module for AvoidModule {
     fn set_input(&mut self, sensor_data: ((f64, f64), bool)) {
         let distance = sensor_data.0;
         self.left_distance = distance.0;
-        self.righ_distance = distance.1;
+        self.right_distance = distance.1;
     }
     fn update(&mut self) {
         self.left_speed = 1.0 + 3.0 * self.left_distance;
-        self.right_speed = 1.0 + 3.0 * self.righ_distance;
+        self.right_speed = 1.0 + 3.0 * self.right_distance;
     }
     fn get_wheelspeed(&self) -> (f64, f64) {
         (self.left_speed, self.right_speed)
@@ -39,7 +39,7 @@ impl AvoidModule {
     pub fn new() -> AvoidModule {
         AvoidModule {
             left_distance: 0.0,
-            righ_distance: 0.0,
+            right_distance: 0.0,
             left_speed: 0.0,
             right_speed: 0.0,
             color: Color::Red,
