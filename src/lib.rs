@@ -22,7 +22,15 @@ extern crate rayon;
 
 extern crate failure;
 
+extern crate gfx_device_gl;
+extern crate gfx_graphics;
+extern crate nalgebra as na;
+extern crate ncollide2d;
+extern crate piston_window;
+
 /// パターン生成のアルゴリズム
 pub mod algorithm;
 /// 複数の描画方法をまとめたもの
 pub mod visualizer;
+
+pub mod simulator;
