@@ -5,6 +5,9 @@ example配下を実行してください。
 cargo run --example chap02_gray_scott --release
 ~~~
 
+## example
+[chap02_game_of_life](https://i.gyazo.com/c0bc4d8c5502722bccd33a4c599d654b.gif)
+[chap05_subsumption](https://i.gyazo.com/318f9bc9e2ed40a5a8f25975134220a7.gif)
 
 ## setup
 ~~~ShellSession
